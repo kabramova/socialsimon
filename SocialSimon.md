@@ -76,6 +76,7 @@ exp3$pair <- plyr::mapvalues(exp3$pair, from = pair.levels,
                              to = c(1:length(pair.levels)))
 ```
 
+
 Then we add the coding for independent variables on 
 
 * trial type, which depends on the congruency between the color of the cue and 
@@ -118,6 +119,8 @@ exp3 <- select(exp3, pair, personid, person, block, trial, cuePos, cueColor,
                startTime, stimTime, order, times, x, y)
 ```
 
+
+
 The y-coordinates are immediately flipped vertically because the package that was
 used for collecting the data (Matlab Psychtoolbox) encodes the screen's top left 
 as coordinates [0, 0] and therefore y-coordinates grow towards the bottom of the screen
@@ -140,11 +143,13 @@ flipped.stim.boundary <- screen.height - stim.boundary
 ggplot(data = filter(exp3, pair==1, trial==20), 
        aes(x=x, y=y, color=person)) +
     geom_path() + xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Complete recorded coordinates of pair 1, trial 20") +
+    ggtitle("Complete recorded coordinates of pair 1, trial 20, condition 3") +
     theme(plot.title = element_text(hjust = 0.5))
 ```
 
 ![](SocialSimon_files/figure-html/flip_y-1.png)<!-- -->
+
+![](SocialSimon_files/figure-html/flip_y_exp4-1.png)<!-- -->
 
 Now we filter out only successful trials, in which participants did not miss any
 deadlines and a correct response was given.
@@ -158,6 +163,8 @@ exp3.complete <- filter(exp3.complete, stimTime>0)
 # selected the correct response
 exp3.complete <- filter(exp3.complete, cueColor==selectedBox)
 ```
+
+
 
 Complete trajectories will be needed for the dynamical part of our analysis at 
 the end of this script. For remaining analyses we need to extract
@@ -204,6 +211,8 @@ ggplot(data = filter(exp3.subset, pair==1, trial==20),
 
 ![](SocialSimon_files/figure-html/extract_trajectories-1.png)<!-- -->
 
+![](SocialSimon_files/figure-html/extract_trajectories_exp4-1.png)<!-- -->
+
 For convenience we rescale the coordinates into a standard MouseTracker 
 coordinate space, where x is in range [-1, 1] and y in range [0, 1.5].
 
@@ -242,6 +251,8 @@ ggplot(data = filter(exp3.subset, pair==1, trial==20),
 
 ![](SocialSimon_files/figure-html/space_rescaling-1.png)<!-- -->
 
+![](SocialSimon_files/figure-html/space_rescaling_exp4-1.png)<!-- -->
+
 Now we align all the trajectories to the common [0, 0] origin and timestamps
 to start at 0.
 
@@ -276,26 +287,19 @@ ggplot(data = filter(exp3.aligned, pair==1, trial==20),
 
 ![](SocialSimon_files/figure-html/align_trajectories-1.png)<!-- -->
 
+![](SocialSimon_files/figure-html/align_trajectories_exp4-1.png)<!-- -->
+
 At this point we can already visualize all trajectories of all pairs.
 
+![](SocialSimon_files/figure-html/all_trajectories-1.png)<!-- -->![](SocialSimon_files/figure-html/all_trajectories-2.png)<!-- -->
 
-```r
-# Visualize all pairs
-ggplot(data = exp3.aligned, aes(x=x.aligned, y=y.aligned, 
-                                color=person, group=trial)) +
-    geom_path() + xlim(-1, 1) + ylim(0, 1.5) + facet_wrap(~pair) +
-    ggtitle("Trajectories for all pairs for all trials") +
-    theme(plot.title = element_text(hjust = 0.5))
-```
-
-![](SocialSimon_files/figure-html/all_trajectories-1.png)<!-- -->
-
-We see that all but one pair seem to divide the screen space between each other
+We see that most pairs seem to divide the screen space between each other
 by moving mostly directly towards their assigned response box and avoiding the center.
-However, one particular pair (number 7) in condition 3 (with visual feedback) has 
-mostly upward moving trajectories. We can further explore here
-whether the joint upward motion is induced by one of the participants or happens
-immediately on both sides.
+However, there are exceptions. 
+
+In condition 3 (with visual feedback) one particular pair (number 7) has mostly 
+upward moving trajectories. We can further explore here whether the joint upward 
+motion is induced by one of the participants or happens immediately on both sides.
 
 
 ```r
@@ -323,6 +327,10 @@ in which it is actually their turn to respond. Why this particular couple behave
 in this manner is unfortunately unknown and might indicate some individual differences,
 the feeling of jointness experienced by this couple or conscious strategies that 
 people adopt in such a task.
+
+In condition 4 (without visual feedback) it is rather than certain individuals 
+adopt the "move upward" strategy, independently of their partner (which is to be
+expected since they do not see the partner's movements).
 
 As the next pre-processing step we will flip all trajectories to one side.
 This ensures that every trajectory starts at the bottom of the coordinate system 
@@ -355,6 +363,9 @@ exp3.aligned %>%
     exp3.aligned.clean
 ```
 
+
+
+
 As a last step, a look at sampling rate distribution to see whether it reveals 
 any outliers that could indicate missing data or wrong recording.
 
@@ -362,49 +373,55 @@ any outliers that could indicate missing data or wrong recording.
 ```r
 exp3.aligned.clean %>% group_by(personid, trial) %>% 
     do(as.data.frame(diff(.$t.aligned, lag=1))) -> 
-    tdiff
-colnames(tdiff)[3] <- 'intervals'
-rate.mean <- mean(tdiff$intervals)
-num.outliers <- sum(tdiff$intervals > 3 * sd(tdiff$intervals) + rate.mean)
-mean.outliers <- mean(tdiff$intervals[which(tdiff$intervals > 3 * sd(tdiff$intervals) + 
-                          mean(tdiff$intervals))])
+    tdiff3
+colnames(tdiff3)[3] <- 'intervals'
+rate.mean <- mean(tdiff3$intervals)
+num.outliers <- sum(tdiff3$intervals > 3 * sd(tdiff3$intervals) + rate.mean)
+mean.outliers <- mean(tdiff3$intervals[which(tdiff3$intervals > 3 * sd(tdiff3$intervals) + 
+                          mean(tdiff3$intervals))])
 
 # y coordinates below -0.5 are a result of wrong recording of the start press
 # sum(exp3.aligned.clean$y.aligned < -0.1)
 exp3.aligned.clean %>% ungroup() %>%
     filter(y.aligned < -0.1) %>%
     select(pair, trial) %>% unique() ->
-    yglitch
-yglitch <- as.data.frame(yglitch)
-yglitch$pair <- as.integer(as.character(yglitch$pair))
+    yglitch3
+yglitch3 <- as.data.frame(yglitch3)
+yglitch3$pair <- as.integer(as.character(yglitch3$pair))
 
-for (i in 1:dim(yglitch)[1]) {
+for (i in 1:dim(yglitch3)[1]) {
     exp3.aligned.clean <- filter(exp3.aligned.clean, 
-                                 !(pair == yglitch[i,1] & trial == yglitch[i,2]))
+                                 !(pair == yglitch3[i,1] & trial == yglitch3[i,2]))
 }
 ```
+
+
+
 We see that the mean of the overall sampling rate is 10.87 ms, which is to 
 be expected given that the experiment sampling rate was set to 92 Hz. However, in 
-41 instances the time interval between one sampling point and the next is higher 
+39 instances the time interval between one sampling point and the next is higher 
 than 3 standard deviations away from the mean rate. The mean of all those points 
-is around 207.71 ms and indicates an interruption in data recording.
+is around 42.92 ms and indicates an interruption in data recording.
 In order to facilitate binned data analysis, we remove trials that contain these
 large large deviations.
 
 
 ```r
 # identify which person the data comes from
-pmissing <- unique(tdiff$personid[which(tdiff$intervals > 2*sd(tdiff$intervals) +
-                                    mean(tdiff$intervals))])
+pmissing <- unique(tdiff3$personid[which(tdiff3$intervals > 2*sd(tdiff3$intervals) +
+                                    mean(tdiff3$intervals))])
 # which trial
-tmissing <- unique(tdiff$trial[which(tdiff$intervals > 2*sd(tdiff$intervals) +
-                                     mean(tdiff$intervals))])
+tmissing <- unique(tdiff3$trial[which(tdiff3$intervals > 2*sd(tdiff3$intervals) +
+                                     mean(tdiff3$intervals))])
 
 exp3.aligned.clean <- subset(exp3.aligned.clean, 
                     !(personid %in% pmissing[1:2] & trial %in% tmissing[1:10]))
 exp3.aligned.clean <- subset(exp3.aligned.clean, 
                             !(personid %in% pmissing[3:4] & trial %in% tmissing[11:21]))
 ```
+
+
+
 
 With the sampling timing issues fixed, we can examine reaction time outliers and
 add another variable to the data, which indicates whether the trial was fast or slow.
