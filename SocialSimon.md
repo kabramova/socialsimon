@@ -2,6 +2,8 @@
 
 
 
+
+
 This is a complete script for analyzing mouse trajectories collected in the
 mouse-tracking Social Simon task. The complete experiment consisted of 4 conditions:
 
@@ -37,45 +39,19 @@ response.boundary <- 128 # lower boundary of response boxes
 stim.boundary <- 820 # the y-coord that needed to be crossed for stimulus to appear
 ```
 
+
+
 We then begin by loading the data and reformatting it for easier processing.
 
 
+
+
 ```r
-process.joint.mdata <- function(filename) {
-    # get all joint data for an experiment and restructure it into long format
-    
-    mdata <- read.csv(filename)
-    names(mdata) <- gsub(x = names(mdata), pattern = "\\.", replacement = "0")
-    # coordinates for different people in separate columns
-    mdata.long <- reshape(mdata, varying=c(9:dim(mdata)[2]), direction="long", 
-                          timevar="order", idvar="trial", sep="_")
-    mdata.complete <- mdata.long[complete.cases(mdata.long),]
-    # just 2 columns for x and y coordinates
-    names(mdata.complete)[11:14] <- c("x_p1", "y_p1", "x_p2", "y_p2")
-    molten <- reshape(mdata.complete, varying=c(11:14), timevar="person", 
-                      direction="long", sep="_")
-    rownames(molten) <- c()
-    subid1 <- sort(unique(molten$subid))[1]
-    subid2 <- sort(unique(molten$subid))[2]
-    
-    molten <- mutate(molten, personid=ifelse((person == 'p1'),
-                                         subid1, subid2))
-    molten$pair <- as.factor(paste(as.character(unique(molten$subid)), 
-                                   collapse=""))
-    return(molten)
-}
-
-# get all experiment data for Experiment 3
-path <- paste(getwd(), '/Experiment3', sep="")
-file.names <- list.files(path, full.names = TRUE)
-exp3 <- do.call(rbind,lapply(file.names, process.joint.mdata))
-
-# rename pair identifiers
-pair.levels <- levels(exp3$pair)
-exp3$pair <- plyr::mapvalues(exp3$pair, from = pair.levels, 
-                             to = c(1:length(pair.levels)))
+exp1 <- load.experiment(1)
+exp2 <- load.experiment(2)
+exp3 <- load.experiment(3)
+exp4 <- load.experiment(4)
 ```
-
 
 Then we add the coding for independent variables on 
 
@@ -85,41 +61,24 @@ its location
 * previous trial type and whose turn it was to respond
 
 
+
+
 ```r
-# add a variable that specifies trial type
-exp3 <- mutate(exp3, trial.type = ifelse(cuePos == cueColor, 'congruent', 'incongruent'))
-# add a variable that specifies the role
-exp3 <- mutate(exp3, role.type=ifelse(((cueColor == 1 & person == 'p1') |
-                                        (cueColor == 2 & person == 'p2')),
-                                        'active', 'passive' ))
-
-exp3 <- arrange(exp3, pair, personid, trial, order)
-
-# add two variables that specify the trial type and role in the previous trial
-get.previous <- function(person.data) {
-    needed.cols <- select(person.data, trial, trial.type, role.type, order)
-    needed.cols %>% group_by(trial) %>% filter(row_number()==n()) ->
-        trial.info.wide
-    trial.info.wide$prev.trial = c(NA, trial.info.wide$trial.type[1:(640-1)])
-    trial.info.wide$prev.role = c(NA, trial.info.wide$role.type[1:(640-1)])
-    
-    expanded <- trial.info.wide[rep(1:nrow(trial.info.wide), trial.info.wide$order),]
-    
-    return(list(expanded$prev.trial, expanded$prev.role))
-}
-
-exp3.tb <- data.table(exp3)
-exp3 <- as.data.frame(exp3.tb[,  c("prev.trial", "prev.role") := get.previous(.SD), 
-                                  by = personid])
-rm(exp3.tb)
-
-# select and order the columns
-exp3 <- select(exp3, pair, personid, person, block, trial, cuePos, cueColor,
-               selectedBox, trial.type, role.type, prev.trial, prev.role,
-               startTime, stimTime, order, times, x, y)
+exp1 <- add.current.vars(exp1)
+exp2 <- add.current.vars(exp2)
+exp3 <- add.current.vars(exp3)
+exp4 <- add.current.vars(exp4)
 ```
 
 
+
+
+```r
+exp1 <- add.previous.vars(exp1)
+exp2 <- add.previous.vars(exp2)
+exp3 <- add.previous.vars(exp3)
+exp4 <- add.previous.vars(exp4)
+```
 
 The y-coordinates are immediately flipped vertically because the package that was
 used for collecting the data (Matlab Psychtoolbox) encodes the screen's top left 
@@ -131,40 +90,20 @@ that is plotted contains all coordinates recorded since the start of the
 trial and so also before the participants clicked on the start button located
 at the bottom of the screen.
 
-
-```r
-exp3$y <- screen.height - exp3$y
-# remap also the relevant boundaries
-flipped.start.boundary <- screen.height - start.boundary
-flipped.response.boundary <- screen.height - response.boundary
-flipped.stim.boundary <- screen.height - stim.boundary
-
-# visualize the data
-ggplot(data = filter(exp3, pair==1, trial==20), 
-       aes(x=x, y=y, color=person)) +
-    geom_path() + xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Complete recorded coordinates of pair 1, trial 20, condition 3") +
-    theme(plot.title = element_text(hjust = 0.5))
-```
-
-![](SocialSimon_files/figure-html/flip_y-1.png)<!-- -->
-
-![](SocialSimon_files/figure-html/flip_y_exp4-1.png)<!-- -->
+![](SocialSimon_files/figure-html/07_flip_y-1.png)<!-- -->
 
 Now we filter out only successful trials, in which participants did not miss any
 deadlines and a correct response was given.
 
 
+
+
 ```r
-# clicked the start button
-exp3.complete <- filter(exp3, startTime>0)
-# moved as requested
-exp3.complete <- filter(exp3.complete, stimTime>0)
-# selected the correct response
-exp3.complete <- filter(exp3.complete, cueColor==selectedBox)
+exp1.complete <- remove.failed(exp1)
+exp2.complete <- remove.failed(exp2)
+exp3.complete <- remove.failed(exp3)
+exp4.complete <- remove.failed(exp4)
 ```
-
-
 
 Complete trajectories will be needed for the dynamical part of our analysis at 
 the end of this script. For remaining analyses we need to extract
@@ -172,126 +111,51 @@ the portions of the trajectories after participants have clicked on the start
 button.
 
 
+
+
 ```r
-# extract trajectory portions after start click
-extract.trajectories <- function(person.data, start.border) {
-    # print(person.data$trial)
-    start.time <- person.data$startTime[1]
-    after.startTime <- person.data$times > start.time
-    start.index <- min(which(after.startTime==TRUE))
-    num.times <- dim(person.data)[1]
-    if (person.data$y[start.index] < start.border) {
-        # this works only for the person who clicked second
-        mdata <- person.data[person.data$times > start.time,]
-    } else {
-        # for the other person we have to infer...
-        before.start <- person.data[1:start.index,]
-        own.start.index <- max(which((before.start$y > start.border)==FALSE))+1
-        mdata <- person.data[own.start.index:num.times,]
-    }
-    return(mdata)
-}
-
-exp3.complete %>% group_by(pair, personid, trial) %>% 
-    do(extract.trajectories(., flipped.start.boundary)) -> 
-    exp3.subset
-
-# reset sampling order to start from 0
-exp3.subset %>% group_by(personid, trial) %>% 
-    do(mutate(., sampling.order=c(1:(max(order) - min(order) + 1)))) -> 
-    exp3.subset
-
-# Visualize the data
-ggplot(data = filter(exp3.subset, pair==1, trial==20), 
-       aes(x=x, y=y, color=person)) +
-    geom_path() + xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Coordinates of pair 1, trial 20 after start click") +
-    theme(plot.title = element_text(hjust = 0.5))
+exp1.subset <- get.subset(exp1.complete)
+exp2.subset <- get.subset(exp2.complete)
+exp3.subset <- get.subset(exp3.complete)
+exp4.subset <- get.subset(exp4.complete)
 ```
 
-![](SocialSimon_files/figure-html/extract_trajectories-1.png)<!-- -->
-
-![](SocialSimon_files/figure-html/extract_trajectories_exp4-1.png)<!-- -->
+![](SocialSimon_files/figure-html/12_plot_extracted-1.png)<!-- -->
 
 For convenience we rescale the coordinates into a standard MouseTracker 
 coordinate space, where x is in range [-1, 1] and y in range [0, 1.5].
 
 
+
+
 ```r
-rescale.space <- function(coordinates, new_min, new_max, old_min, old_max){
-    # Rescales space to given x- and y-limits and centers on the origin.
-    # :param coordinates: (array) array of coordinates to rescale
-    # :param new_min: (int) new minimum limit
-    # :param new_max: (int) new maximum limit
-    # :param old_range: (int) original range of the data (screen width or height)
-    # :return: space-normalized array
-    new_range <- new_max - new_min
-    old_range <- old_max - old_min
-    rescaled <- ((((coordinates - old_min) * new_range) / old_range) + new_min)
-    return(rescaled)
-}
-
-exp3.subset$x.scaled <- rescale.space(exp3.subset$x, -1, 1, 0, screen.width)
-exp3.subset$y.scaled <- rescale.space(exp3.subset$y, 0, 1.5, 0, screen.height)
-
-scaled.start.boundary <- rescale.space(flipped.start.boundary, 0, 1.5, 0, 
-                                       screen.height)
-scaled.response.boundary <- rescale.space(flipped.response.boundary, 0, 1.5, 0, 
-                                          screen.height)
-scaled.stim.boundary <- rescale.space(flipped.stim.boundary, 0, 1.5, 0, 
-                                      screen.height)
-
-# Visualize the data
-ggplot(data = filter(exp3.subset, pair==1, trial==20), 
-       aes(x=x.scaled, y=y.scaled, color=person)) +
-    geom_path() + xlim(-1, 1) + ylim(0, 1.5) +
-    ggtitle("Space rescaled coordinates of pair 1, trial 20") +
-    theme(plot.title = element_text(hjust = 0.5))
+exp1.scaled <- get.scaled(exp1.subset)
+exp2.scaled <- get.scaled(exp2.subset)
+exp3.scaled <- get.scaled(exp3.subset)
+exp4.scaled <- get.scaled(exp4.subset)
 ```
 
-![](SocialSimon_files/figure-html/space_rescaling-1.png)<!-- -->
-
-![](SocialSimon_files/figure-html/space_rescaling_exp4-1.png)<!-- -->
+![](SocialSimon_files/figure-html/15_plot_rescaled-1.png)<!-- -->
 
 Now we align all the trajectories to the common [0, 0] origin and timestamps
 to start at 0.
 
 
+
+
 ```r
-normalize.space <- function(coordinates) {
-    new.coord <- coordinates - coordinates[1]
-    return(new.coord)
-}
-
-get.stim.time <- function(stim.time, times) {
-    return(stim.time - times[1])    
-}
-
-exp3.subset %>% group_by(pair, trial, person) %>% 
-    do(mutate(., x.aligned = normalize.space(x.scaled), 
-              y.aligned = normalize.space(y.scaled),
-              t.aligned = normalize.space(times),
-              stim.aligned = get.stim.time(stimTime, times))) -> 
-    exp3.aligned
-
-#given that we have no data regarding previous trial for trial 1, remove them
-exp3.aligned <- exp3.aligned[complete.cases(exp3.aligned),]
-
-# Visualize data
-ggplot(data = filter(exp3.aligned, pair==1, trial==20), 
-       aes(x=x.aligned, y=y.aligned, color=person)) +
-    geom_path() + xlim(-1, 1) + ylim(0, 1.5) +
-    ggtitle("Space aligned coordinates of pair 1, trial 20") +
-    theme(plot.title = element_text(hjust = 0.5))
+exp1.aligned <- get.aligned(exp1.scaled)
+exp2.aligned <- get.aligned(exp2.scaled)
+exp3.aligned <- get.aligned(exp3.scaled)
+exp4.aligned <- get.aligned(exp4.scaled)
 ```
 
-![](SocialSimon_files/figure-html/align_trajectories-1.png)<!-- -->
+![](SocialSimon_files/figure-html/18_plot_aligned-1.png)<!-- -->
 
-![](SocialSimon_files/figure-html/align_trajectories_exp4-1.png)<!-- -->
+At this point we can already visualize all trajectories of all individual participants
+and pairs.
 
-At this point we can already visualize all trajectories of all pairs.
-
-![](SocialSimon_files/figure-html/all_trajectories-1.png)<!-- -->![](SocialSimon_files/figure-html/all_trajectories-2.png)<!-- -->
+![](SocialSimon_files/figure-html/19_all_trajectories-1.png)<!-- -->![](SocialSimon_files/figure-html/19_all_trajectories-2.png)<!-- -->![](SocialSimon_files/figure-html/19_all_trajectories-3.png)<!-- -->![](SocialSimon_files/figure-html/19_all_trajectories-4.png)<!-- -->
 
 We see that most pairs seem to divide the screen space between each other
 by moving mostly directly towards their assigned response box and avoiding the center.
@@ -301,17 +165,7 @@ In condition 3 (with visual feedback) one particular pair (number 7) has mostly
 upward moving trajectories. We can further explore here whether the joint upward 
 motion is induced by one of the participants or happens immediately on both sides.
 
-
-```r
-# plot the first 5 trials of aligned trajectories
-p7.early <- filter(exp3.aligned, pair==7, trial %in% c(2:7))
-ggplot(data = p7.early, 
-       aes(x=x.aligned, y=y.aligned, group=trial, color=role.type)) +
-    geom_path() + xlim(-1, 1) + ylim(0, 1.5) + 
-    facet_grid(trial~person)
-```
-
-![](SocialSimon_files/figure-html/aberrant_pair-1.png)<!-- -->
+![](SocialSimon_files/figure-html/20_aberrant_pair-1.png)<!-- -->
 
 The plot presents trajectories in the first couple of trials (2, 3, 5, 6, 7) of two
 participants from pair 7. The trajectories are colored red for when participant's
@@ -338,87 +192,45 @@ and ends in the top right corner. It is done to obtain comparable trajectory
 measures.
 
 
+
+
 ```r
-flip.x <- function(coordinates) {
-    n.coord <- length(coordinates)
-    n.neg <- sum(coordinates<0)
-    
-    if (coordinates[n.coord] < -0.1 || n.neg > (0.5*n.coord)) {
-        coordinates <- coordinates * -1
-    }
-    return(coordinates)
-}
-
-exp3.aligned %>% group_by(pair, trial, person) %>% 
-    do(mutate(., x.flipped = flip.x(x.aligned))) -> 
-    exp3.aligned
-
-# also convert times into ms
-exp3.aligned$t.aligned <- exp3.aligned$t.aligned*1000
-
-# remove irrelevant columns
-exp3.aligned %>% 
-    select(-c(startTime, stimTime, order, times, x, y, 
-              x.scaled, y.scaled, x.aligned)) -> 
-    exp3.aligned.clean
+exp1.clean <- get.clean(exp1.aligned)
+exp2.clean <- get.clean(exp2.aligned)
+exp3.clean <- get.clean(exp3.aligned)
+exp4.clean <- get.clean(exp4.aligned)
 ```
-
-
-
 
 As a last step, a look at sampling rate distribution to see whether it reveals 
 any outliers that could indicate missing data or wrong recording.
 
 
-```r
-exp3.aligned.clean %>% group_by(personid, trial) %>% 
-    do(as.data.frame(diff(.$t.aligned, lag=1))) -> 
-    tdiff3
-colnames(tdiff3)[3] <- 'intervals'
-rate.mean <- mean(tdiff3$intervals)
-num.outliers <- sum(tdiff3$intervals > 3 * sd(tdiff3$intervals) + rate.mean)
-mean.outliers <- mean(tdiff3$intervals[which(tdiff3$intervals > 3 * sd(tdiff3$intervals) + 
-                          mean(tdiff3$intervals))])
 
-# y coordinates below -0.5 are a result of wrong recording of the start press
-# sum(exp3.aligned.clean$y.aligned < -0.1)
-exp3.aligned.clean %>% ungroup() %>%
-    filter(y.aligned < -0.1) %>%
-    select(pair, trial) %>% unique() ->
-    yglitch3
-yglitch3 <- as.data.frame(yglitch3)
-yglitch3$pair <- as.integer(as.character(yglitch3$pair))
-
-for (i in 1:dim(yglitch3)[1]) {
-    exp3.aligned.clean <- filter(exp3.aligned.clean, 
-                                 !(pair == yglitch3[i,1] & trial == yglitch3[i,2]))
-}
-```
+From the data we can extract all intervals between adjacent sampling points and
+calculate their mean and standard devation. We then establish a cutoff point of
+3 SD from the mean beyond which the sampling interval is considered to be an outlier.
+We calculate the number of such outliers for each condition and their mean sampling
+rate. The resulting numbers are presented in the following table.
 
 
+              rate.means   rate.sds   rate.cutoff   num.outliers   mean.outliers
+-----------  -----------  ---------  ------------  -------------  --------------
+condition1         10.87       0.01         10.88            596           10.90
+condition2         10.87       0.01         10.91              8           13.60
+condition3         10.87       1.30         14.78             41          207.71
+condition4         10.87       0.53         12.47             39           42.92
 
-We see that the mean of the overall sampling rate is 10.87 ms, which is to 
-be expected given that the experiment sampling rate was set to 92 Hz. However, in 
-39 instances the time interval between one sampling point and the next is higher 
-than 3 standard deviations away from the mean rate. The mean of all those points 
-is around 42.92 ms and indicates an interruption in data recording.
-In order to facilitate binned data analysis, we remove trials that contain these
-large large deviations.
+It turns out that the means sampling rate for all conditions is 
+within expected parameters given the set sampling rate of 92 Hz. The number of
+outliers and their means varies per condition with much larger deviations in social
+conditions. Given the cross-computer data stream in these conditions, some amount
+of data loss was to be expected. In order to facilitate binned data analysis, 
+we remove trials that contain these large deviations (separately for each condition).
 
+Next we look at y coordinates that should not be lower than some margin around 0
+(after flipping and alignment). A y-coordinate that is more negative indicates a
+faulty recording of the start button press.
 
-```r
-# identify which person the data comes from
-pmissing <- unique(tdiff3$personid[which(tdiff3$intervals > 2*sd(tdiff3$intervals) +
-                                    mean(tdiff3$intervals))])
-# which trial
-tmissing <- unique(tdiff3$trial[which(tdiff3$intervals > 2*sd(tdiff3$intervals) +
-                                     mean(tdiff3$intervals))])
-
-exp3.aligned.clean <- subset(exp3.aligned.clean, 
-                    !(personid %in% pmissing[1:2] & trial %in% tmissing[1:10]))
-exp3.aligned.clean <- subset(exp3.aligned.clean, 
-                            !(personid %in% pmissing[3:4] & trial %in% tmissing[11:21]))
-```
 
 
 
@@ -427,49 +239,27 @@ With the sampling timing issues fixed, we can examine reaction time outliers and
 add another variable to the data, which indicates whether the trial was fast or slow.
 
 
+
+
 ```r
-get.RT <- function(time_coordinates) {
-    n.coord <- length(time_coordinates)
-    return(time_coordinates[n.coord])
-}
-
-exp3.aligned.clean %>% group_by(pair, trial, person) %>% 
-    do(mutate(., total.time = get.RT(t.aligned))) %>%
-    ungroup() ->
-    exp3.aligned.clean
-
-exp3.aligned.clean %>% group_by(personid) %>%
-    mutate(., median.time = median(total.time)) %>%
-    ungroup() ->
-    exp3.aligned.clean
-    
-ggplot(exp3.aligned.clean, aes(x=total.time)) + geom_histogram(binwidth=100) +
-    ggtitle("Histogram of all trial durations")
+exp1.clean <- time.outliers(exp1.clean)
+exp2.clean <- time.outliers(exp2.clean)
+exp3.clean <- time.outliers(exp3.clean)
+exp4.clean <- time.outliers(exp4.clean)
 ```
 
-![](SocialSimon_files/figure-html/trial_speed-1.png)<!-- -->
+![](SocialSimon_files/figure-html/29_plot_rts-1.png)<!-- -->
+
+Note that in condition 2 the histogram looks markedly different for active and
+passive trials. This is because when participant was supposed to refrain from 
+responding, they had to simply wait for the trial to end.
+
+After we produced clean data for all conditions, we combine the two social ones 
+into a single data frame.
+
 
 ```r
-# remove particularly slow trials
-outlierRT <- mean(exp3.aligned.clean$total.time) + 
-    3*sd(exp3.aligned.clean$total.time)
-exp3.aligned.clean %>% group_by(pair, trial, person) %>% 
-    filter(total.time < outlierRT) -> 
-    exp3.aligned.clean
-
-ggplot(exp3.aligned.clean, aes(x=total.time)) + geom_histogram(binwidth=100) +
-    ggtitle("Histogram of trial durations with particularly long trials removed")
-```
-
-![](SocialSimon_files/figure-html/trial_speed-2.png)<!-- -->
-
-```r
-# add 
-midRT <- median(exp3.aligned.clean$total.time)
-exp3.aligned.clean %>% group_by(pair, trial, person) %>% 
-    do(mutate(., trial.speed = ifelse(total.time <= midRT,
-                                      'fast', 'slow'))) -> 
-    exp3.aligned.clean
+exp.clean <- rbind(exp3.clean, exp4.clean)
 ```
 
 For the analysis we will use a mousetrap package. Accordingly, the next step is 
@@ -477,7 +267,22 @@ to transform the data into a mousetrap object.
 
 
 ```r
-mtdata <- mt_import_long(exp3.aligned.clean, 
+mtdata1 <- mt_import_long(exp1.clean, 
+                        xpos_label = 'x.flipped', 
+                        ypos_label = 'y.aligned', 
+                        timestamps_label = 't.aligned', 
+                        mt_id_label = c('personid','trial'), 
+                        mt_seq_label = 'sampling.order', 
+                        reset_timestamps = FALSE)
+mtdata2 <- mt_import_long(exp2.clean, 
+                        xpos_label = 'x.flipped', 
+                        ypos_label = 'y.aligned', 
+                        timestamps_label = 't.aligned', 
+                        mt_id_label = c('personid','trial'), 
+                        mt_seq_label = 'sampling.order', 
+                        reset_timestamps = FALSE)
+
+mtdata <- mt_import_long(exp.clean, 
                         xpos_label = 'x.flipped', 
                         ypos_label = 'y.aligned', 
                         timestamps_label = 't.aligned', 
@@ -492,9 +297,67 @@ contains the same number of recorded points, typically this is set to 101 points
 
 
 ```r
+mtdata1 <- mt_time_normalize(mtdata1)
+mtdata2 <- mt_time_normalize(mtdata2)
 mtdata <- mt_time_normalize(mtdata)
 ```
 
+We need to check that all participants have a balanced number of observations 
+for different variables of interest.
+
+
+
+
+```r
+counts1 <- get.counts(exp1.complete)
+counts2 <- get.counts(exp2.complete)
+counts3 <- get.counts(exp3.complete)
+counts4 <- get.counts(exp4.complete)
+```
+
+![](SocialSimon_files/figure-html/35_plot_counts-1.png)<!-- -->![](SocialSimon_files/figure-html/35_plot_counts-2.png)<!-- -->![](SocialSimon_files/figure-html/35_plot_counts-3.png)<!-- -->![](SocialSimon_files/figure-html/35_plot_counts-4.png)<!-- -->
+
+From the counts plot, we can see that in condition 1 and 2 one person in each
+has markedly less successful trials than other participants. In condition 3, 
+even though different numbers of trials remain for different pairs after removing 
+unsuccessful ones, there are similar counts for different trial and role types.
+
+By contrast, in condition 4, three of the pairs completely lose observations for
+one of the incongruent set of trials, namely participants with ids 14, 23, 29 
+lose incongruent active trials while their co-actors (ids 13, 24, 30) incongruent
+passive ones. Further investigation of these counts reveals that the crucial step
+that leads to this loss is filtering out trials in which incorrect response was
+given, that is, participant clicked on the wrong response box. Given that this 
+correlates with trials being incongruent (the cue appeared on the same side as
+the incorrect response box), we might infer that participants 14, 23 and 29
+misunderstood the task, i.e. they were responding to the location of the cue, rather
+than its color. We can confirm this conclusion by plotting the trajectories of
+these participants.
+
+![](SocialSimon_files/figure-html/36_plot_wrong_people-1.png)<!-- -->
+
+We see that indeed, 3 participants in condition 4 misunderstood the instructions
+and therefore need to be removed from further analysis.
+
+
+```r
+mtdata1 <- mt_subset(mtdata1, personid != "c1p5")
+mtdata2 <- mt_subset(mtdata2, personid != "c2p11")
+mtdata2 <- mt_subset(mtdata2, !(personid == "c2p16" & role.type == "passive"))
+# redo this later
+mtdata2 <- mt_subset(mtdata2, !(personid == "c2p17" & role.type == "passive"))
+
+mtdata <- mt_subset(mtdata, !(condition == 4 & (personid %in% 
+                                                    c("c4p4", "c4p13", "c4p19"))))
+mtdata <- mt_subset(mtdata, !(condition == 4 & role.type == 'passive' & 
+                                    (personid %in% c("c4p3", "c4p14", "c4p20"))))
+```
+
+
+
+
+As a result of data cleaning, 13%, 3%, 
+4%, 27% of trials in conditions 1 to 4 are removed.
 
 # Dependent variables calculation
 
@@ -506,24 +369,21 @@ data.
 
 
 ```r
-# get mt measures
+# get mt measures for all experiments
+mtdata1 <- mt_derivatives(mtdata1, use="trajectories")
+mtdata1 <- mt_angles(mtdata1, use="trajectories")
+mtdata1 <- mt_measures(mtdata1, use="trajectories", save_as = "measures")
+
+mtdata2 <- mt_derivatives(mtdata2, use="trajectories")
+mtdata2 <- mt_angles(mtdata2, use="trajectories")
+mtdata2 <- mt_measures(mtdata2, use="trajectories", save_as = "measures")
+
 mtdata <- mt_derivatives(mtdata, use="trajectories")
 mtdata <- mt_angles(mtdata, use="trajectories")
 mtdata <- mt_measures(mtdata, use="trajectories", save_as = "measures")
-# TODO implement distance calculation from response and foil coordinates
-# TODO we can calculate
-# max_angle:      max angle towards incorrect response
-# init_angle:     initial angle after the start of the movement
-# angle_flips:    the amount of change in angles
-
-# this returns
-# a) vertical-based angles (angle_v), where positive values indicate a movement 
-# to the left of the vertical, negative - to the right 
-# b) point-based angles (angle_p) that indicate changes of movement within three
-# consecutive time steps; a value of pi (= 3.14...) (for radians) or 180 (for 
-# degrees) indicates a constant movement direction, a value of 0 a complete reversal
-# Freeman et al suggest calculating angle relative to the start button.
 ```
+
+
 
 These are the measures that are returned:
 
@@ -576,6 +436,7 @@ the data into two groups: active and passive data.
 
 
 ```r
+# we split only the social conditions by role
 activedata <- mt_subset(mtdata, role.type=='active')
 passivedata <- mt_subset(mtdata, role.type=='passive')
 ```
@@ -595,333 +456,84 @@ Our independent variables that we will examine are:
 * previous trial type: whether trial at time t-1 was congruent or not
 * previous role type: whether in the previous trial participant had to act
 
+![](SocialSimon_files/figure-html/41_explo_plots_12-1.png)<!-- -->
 
-```r
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-  library(grid)
+Now for the social conditions.
 
-  # Make a list from the ... arguments and plotlist
-  plots <- c(list(...), plotlist)
+![](SocialSimon_files/figure-html/42_explo_plots-1.png)<!-- -->
 
-  numPlots = length(plots)
+From these plots it would seem that neither of the independent variables
+affects the shape of movement trajectory and furthermore that participants go
+straight for their assigned response button instead of producing curved trajectories
+typically found in mouse-tracking studies. 
 
-  # If layout is NULL, then use 'cols' to determine layout
-  if (is.null(layout)) {
-    # Make the panel
-    # ncol: Number of columns of plots
-    # nrow: Number of rows needed, calculated from # of cols
-    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
-                    ncol = cols, nrow = ceiling(numPlots/cols))
-  }
-
- if (numPlots==1) {
-    print(plots[[1]])
-
-  } else {
-    # Set up the page
-    grid.newpage()
-    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-
-    # Make each plot, in the correct location
-    for (i in 1:numPlots) {
-      # Get the i,j matrix positions of the regions that contain this subplot
-      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-
-      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                      layout.pos.col = matchidx$col))
-    }
-  }
-}
-# plot average trajectory for active trials, by trial type
-p1 <- mt_plot_aggregate(activedata, use = "tn_trajectories", points=TRUE, 
-                  x = "xpos", y = "ypos", color = "trial.type", 
-                  subject_id = "personid") +
-    theme(legend.position=c(.8,.2)) +
-    xlab("x coordinate (px)") + ylab("y coordinate (px)") +
-    ggtitle("Average trajectories for active trials by trial type")
-
-# plot average trajectory for passive trials, by trial type
-p2 <- mt_plot_aggregate(passivedata, use = "tn_trajectories", points=TRUE, 
-                  x = "xpos", y = "ypos", color = "trial.type", 
-                  subject_id = "personid") +
-    theme(legend.position=c(.8,.2)) +
-    xlab("x coordinate (px)") + ylab("y coordinate (px)") +
-    ggtitle("Average trajectories for passive trials by trial type")
-
-# trajectories by previous trial type
-p3 <- mt_plot_aggregate(activedata, use = "tn_trajectories", points=TRUE, 
-                  x = "xpos", y = "ypos", color = "prev.trial", 
-                  subject_id = "personid") +
-    theme(legend.position=c(.8,.2))+
-    xlab("x coordinate (px)") + ylab("y coordinate (px)") +
-    ggtitle("Average trajectories for active trials by previous trial type")
-p4 <- mt_plot_aggregate(passivedata, use = "tn_trajectories", points=TRUE, 
-                  x = "xpos", y = "ypos", color = "prev.trial", 
-                  subject_id = "personid") +
-    theme(legend.position=c(.8,.2))+
-    xlab("x coordinate (px)") + ylab("y coordinate (px)")+
-    ggtitle("Average trajectories for passive trials by previous trial type")
-
-# trajectories by previous role
-p5 <- mt_plot_aggregate(activedata, use = "tn_trajectories", points=TRUE, 
-                  x = "xpos", y = "ypos", color = "prev.role", 
-                  subject_id = "personid") +
-    theme(legend.position=c(.8,.2))+
-    xlab("x coordinate (px)") + ylab("y coordinate (px)")+
-    ggtitle("Average trajectories for active trials by previous role")
-p6 <- mt_plot_aggregate(passivedata, use = "tn_trajectories", points=TRUE, 
-                  x = "xpos", y = "ypos", color = "prev.role", 
-                  subject_id = "personid") +
-    theme(legend.position=c(.8,.2))+
-    xlab("x coordinate (px)") + ylab("y coordinate (px)")+
-    ggtitle("Average trajectories for passive trials by previous role")
-
-multiplot(p1, p2, p3, p4, p5, p6, cols=2)
-```
-
-![](SocialSimon_files/figure-html/explo_plots-1.png)<!-- -->
-
-Already from these plots it would seem that neither of the independent variables
-affects the shape of movement trajectory. However, we will persevere. Instead of 
-plotting both x,y-coordinates, we could focus our attention on just
-the x plane, since it is the one of bigger relevance to the task.
+However, to check whether this overall pattern holds on the individual level, 
+we can also plot average trajectories for individual participants, focusing here 
+on the effect of current trial type, for active and passive data.
 
 
-```r
-# Plot aggregate trajectories with standard errors
-# (note that mean_se does not take into account within subjects design)
-avg.tn.trajectories <- mt_aggregate_per_subject(activedata,
-  use="tn_trajectories", use2_variables="trial.type",subject_id="personid")
-p1 <- ggplot(avg.tn.trajectories, aes(x=steps,y=xpos,group=trial.type))+
-    stat_summary(geom = "ribbon",fun.data=mean_se,alpha=.2)+
-    geom_line(aes(color=trial.type),stat="summary",fun.y="mean")+
-    scale_color_brewer(type="qual",palette = "Set1" )+
-    theme(legend.position=c(.2,.8), plot.title = element_text(size = 10)) +
-    ggtitle("Average x dimension by trial type")
-    
-avg.tn.trajectories <- mt_aggregate_per_subject(activedata,
-  use="tn_trajectories", use2_variables="prev.trial",subject_id="personid")
-p2 <- ggplot(avg.tn.trajectories, aes(x=steps,y=xpos,group=prev.trial))+
-    stat_summary(geom = "ribbon",fun.data=mean_se,alpha=.2)+
-    geom_line(aes(color=prev.trial),stat="summary",fun.y="mean")+
-    scale_color_brewer(type="qual",palette = "Set1" )+
-    theme(legend.position=c(.2,.8), plot.title = element_text(size = 10)) +
-    ggtitle("Average x dimension by previous trial")
-
-avg.tn.trajectories <- mt_aggregate_per_subject(activedata,
-  use="tn_trajectories", use2_variables="prev.role",subject_id="personid")
-p3 <- ggplot(avg.tn.trajectories, aes(x=steps,y=xpos,group=prev.role))+
-    stat_summary(geom = "ribbon",fun.data=mean_se,alpha=.2)+
-    geom_line(aes(color=prev.role),stat="summary",fun.y="mean")+
-    scale_color_brewer(type="qual",palette = "Set1" )+
-    theme(legend.position=c(.2,.8), plot.title = element_text(size = 10))+
-    ggtitle("Average x dimension by previous role")
-
-multiplot(p1, p2, p3, cols=3)
-```
-
-![](SocialSimon_files/figure-html/x_plots-1.png)<!-- -->
-
-Rather than looking at grand averages, we can also look at averages within pairs.
-For simplicity we only look at trajectories by current trial type.
 
 
-```r
-pairs <- sort(rep(c(1:11), 2*2*101))
-avg.tn.trajectories.active <- mt_aggregate_per_subject(activedata,
-  use="tn_trajectories", use2_variables="trial.type", subject_id="personid")
-avg.tn.trajectories.active$couple <- as.factor(pairs)
 
-avg.tn.trajectories.active <- mutate(avg.tn.trajectories.active, 
-                              person=ifelse(personid %% 2 != 0,
-                                        'p1', 'p2' ))
+![](SocialSimon_files/figure-html/45_avg_person-1.png)<!-- -->![](SocialSimon_files/figure-html/45_avg_person-2.png)<!-- -->![](SocialSimon_files/figure-html/45_avg_person-3.png)<!-- -->![](SocialSimon_files/figure-html/45_avg_person-4.png)<!-- -->
 
-ggplot(avg.tn.trajectories.active, aes(x=xpos, y=ypos, 
-                     linetype=trial.type, color=person)) + geom_path() + 
-    facet_wrap(~couple)
-```
+Here we can make several observations. First, even though the general pattern that
+we see on the group level holds for majority but not all individuals. There are
+3 participants in condition 3 and 2 participants in condition 4 do exhibit trajectories
+that go upwards first and then to the response box (curved trajectories). For 
+some of these individuals we can also note a slightly bigger curve in incogruent
+active trials but no difference in passive trials. Furthermore, all of them show
+shorter trajectories in passive than active trials, while most participants with 
+straight trajectories seem to proceed all the way to the response box even when
+it is not their turn to respond, i.e. despite the fact that they could return to 
+the starting position as soon as it became clear it is not their trial.
 
-![](SocialSimon_files/figure-html/avg_pairs-1.png)<!-- -->
-
-Also here, even if there is variability in trajectories between people, it does 
-not seem like congruency of the trial within each person leads to different 
-movement path.
-
-We can do the same for the passive data.
-
-
-```r
-avg.tn.trajectories.passive <- mt_aggregate_per_subject(passivedata,
-  use="tn_trajectories", use2_variables="trial.type", subject_id="personid")
-avg.tn.trajectories.passive$couple <- as.factor(pairs)
-
-avg.tn.trajectories.passive <- mutate(avg.tn.trajectories.passive, 
-                              person=ifelse(personid %% 2 != 0,
-                                        'p1', 'p2' ))
-
-ggplot(avg.tn.trajectories.passive, aes(x=xpos, y=ypos, 
-                     linetype=trial.type, color=person)) + geom_path() + 
-    facet_wrap(~couple)
-```
-
-![](SocialSimon_files/figure-html/avg_pairs_passive-1.png)<!-- -->
-
-From the examination of passive trials it seems that people tend to complete
-the movement, even if they could return to the starting position as soon as
-it becomes clear it is not their turn to respond.
-We can confirm this by also plotting a histogram of maximum y coordinate
-reached in passive trials. The thresholds indicated on the plot are the locations
-of the start boundary, the y-coordinated that had to be crossed in order for the 
-cue to appear and the lower response box boundary. As can be seen from the plot,
+We can confirm the latter observation by also plotting a histogram of maximum y 
+coordinate reached in passive trials. The thresholds indicated on the plot are the 
+locations of the start boundary, the y-coordinated that had to be crossed in order 
+for the cue to appear and the lower response box boundary. As can be seen from the plot,
 the majority of trajectories goes beyond that last threshold.
 
+![](SocialSimon_files/figure-html/46_passive_hist-1.png)<!-- -->
 
-```r
-cuts <- data.frame(Thresholds=c('start', 'stimulus', 'response'), 
-                   vals=c(scaled.start.boundary, scaled.stim.boundary, 
-                          scaled.response.boundary))
-# we need to use data before alignment was performed
-exp3.aligned %>% group_by(pair, trial, person) %>%
-    filter(row_number()==n()) %>% select(y.scaled) ->
-        max.ys
-ggplot(max.ys, aes(x=y.scaled)) + 
-    geom_histogram(binwidth=.05) + 
-    geom_vline(data=cuts, aes(xintercept=vals, color=Thresholds))
-```
+For the following plots we will separate straight-trajectory participants from the
+curved-trajectory participants in conditions 2, 3 and 4 as they seem to behave in a qualitatively different manner.
 
-![](SocialSimon_files/figure-html/passive_hist-1.png)<!-- -->
+
 
 In addition to plotting time-normalized trajectories in full, we can bin them into
-several intervals.
+several intervals with the aim of further subjecting the bins to inferential testing.
+
+![](SocialSimon_files/figure-html/48_binned_tnplots-1.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-2.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-3.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-4.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-5.png)<!-- -->
+
+Some analyses, such as looking at movement velocity profiles, require retaining 
+trajectories in raw time. In this case, we decide how many raw time bins to create 
+between 0 ms and some cutoff (e.g., 1500 ms) and then create a number of raw time steps. 
+Thus, each step (i.e., coordinate pair) of a trajectory reflects the location of 
+the mouse during some raw time bin (e.g., 500-600 ms if bins are 100 ms wide).
 
 
-```r
-# average time-normalized trajectories into 4 bins
-activedata <- mt_average(activedata, use="tn_trajectories", 
-                     save_as="av_tn_trajectories",
-                     av_dimension="steps",
-                     intervals = c(0.5,33.5,67.5,101.5))
 
-# to view the data
-# mt_aggregate(activedata,use = "av_tn_trajectories",
-#   use2_variables = "trial.type", subject_id = "personid")
+Once we have created such raw time bins, we can look at velocity in different
+types of trials. The literature suggests, for example, that stronger competition 
+between response options should be characterized by an initial decreased velocity 
+as competing choices inhibit each other, followed by an increase in velocity once 
+the system converges upon a decision and the inhibition is alleviated. 
+Thus, analyzing velocity data can allow for inferences about when commitments to 
+a particular response are made.
 
-mt_plot_aggregate(activedata, use = "av_tn_trajectories", points=TRUE,
-                  color = "trial.type", subject_id = "personid") +
-    ggtitle("Active trajectory coordinates in binned normalized time")
-```
-
-![](SocialSimon_files/figure-html/binned_tnplots-1.png)<!-- -->
-
-Some analyses require retaining trajectories in raw time. In this case, we
-decide how many raw time bins to create between 0 ms and some cutoff (e.g., 
-1500 ms) and then create a number of raw time steps. Thus, each step 
-(i.e., coordinate pair) of a trajectory reflects the location of the mouse during 
-some raw time bin (e.g., 500-600 ms if bins are 100 ms wide).
-
-Such raw binned data can also be plotted although it seems to work better if 
-data for slow and fast trials is separated.
+In our particular case, we might also ask whether velocity is different between
+active and passive trials and whether participants that exhibit qualitatively
+different movement trajectories also differ in their velocity profiles.
 
 
-```r
-# split data in slow and fast trials
-slow.activedata <- mt_subset(activedata, trial.speed=='slow')
-fast.activedata <- mt_subset(activedata, trial.speed=='fast')
-
-slow.activedata <- mt_average(slow.activedata,
-                     use="trajectories", save_as = "av_trajectories",
-                     interval_size = 300, max_interval = 900)
-mt_plot_aggregate(slow.activedata, use = "av_trajectories", points=TRUE,
-                  color = "trial.type", subject_id = "personid") +
-    theme(legend.position=c(.8,.2)) +
-    xlab("x coordinate (px)") + ylab("y coordinate (px)") +
-    ggtitle("Slow active trajectory coordinates in binned raw time")
-```
-
-![](SocialSimon_files/figure-html/binned_plots-1.png)<!-- -->
-
-```r
-fast.activedata <- mt_average(fast.activedata,
-                       use="trajectories", save_as = "av_trajectories",
-                       interval_size = 300, max_interval = 1800)
-mt_plot_aggregate(fast.activedata, use = "av_trajectories", points=TRUE, 
-                  color = "trial.type", subject_id = "personid") +
-    theme(legend.position=c(.8,.2)) +
-    xlab("x coordinate (px)") + ylab("y coordinate (px)") +
-    ggtitle("Fast active trajectory coordinates in binned raw time")
-```
-
-![](SocialSimon_files/figure-html/binned_plots-2.png)<!-- -->
-
-Similar analysis can be performed not on coordinates but on movement velocity.
-
-The literature suggests that stronger competition between response options should 
-be characterized by an initial decreased velocity as competing choices inhibit 
-each other, followed by an increase in velocity once the system converges upon
-a decision and the inhibition is alleviated. Thus, analyzing velocity data can 
-allow for inferences about when commitments to a particular response are made.
 
 Here we plot velocity profiles in binned raw time, together with approximate
-time in which cue appeared.
+time in which cue appeared (mean appearance time being 294 ms).
+
+![](SocialSimon_files/figure-html/plot_velocity-1.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-2.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-3.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-4.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-5.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-6.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-7.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-8.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-9.png)<!-- -->
 
 
-```r
-scaled.stim.times <- mtdata$data$stim.aligned * 1000
-stim.mean <- mean(scaled.stim.times)
-stim.sd <- sd(scaled.stim.times)
-stim.lower <- stim.mean - stim.sd
-stim.higher <- stim.mean + stim.sd
-
-cuts.velocity <- data.frame(Thresholds=c('stim.lower', 'stim.mean', 'stim.higher'), 
-                   vals=c(stim.lower, stim.mean, 
-                          stim.higher))
-cuts.velocity$stat <- c('sd', 'mean', 'sd')
-cuts.velocity
-```
-
-```
-##    Thresholds     vals stat
-## 1  stim.lower 181.7183   sd
-## 2   stim.mean 301.6412 mean
-## 3 stim.higher 421.5640   sd
-```
-
-```r
-# velocity in active data
-activedata <- mt_average(activedata,
-                     use="trajectories", save_as = "av_trajectories",
-                     interval_size = 200, max_interval = 1800)
-
-mt_plot_aggregate(activedata, use = "av_trajectories", 
-                  points=TRUE, x = "timestamps", y = "vel", 
-                  color = "trial.type", subject_id = "personid") +
-    theme(legend.position=c(.75,.85), legend.box='horizontal')+
-    xlab("time") + ylab("velocity") +
-    geom_vline(data=cuts.velocity, aes(xintercept=vals, linetype=stat)) +
-    scale_linetype_manual(name="Stimulus Time Stats", 
-                          values=c("solid", "longdash")) +
-    ggtitle("Active velocity profiles in binned raw time")
-```
-
-![](SocialSimon_files/figure-html/active_vel-1.png)<!-- -->
-
-```r
-# velocity in passive data
-passivedata <- mt_average(passivedata,
-                       use="trajectories", save_as = "av_trajectories",
-                       interval_size = 200, max_interval = 1800)
-mt_plot_aggregate(passivedata, use = "av_trajectories", 
-                  points=TRUE, x = "timestamps", y = "vel", 
-                  color = "trial.type", subject_id = "personid") +
-    theme(legend.position=c(.75,.85), legend.box='horizontal')+
-    xlab("time") + ylab("velocity") +
-    geom_vline(data=cuts.velocity, aes(xintercept=vals, linetype=stat)) +
-    scale_linetype_manual(name="Stimulus Time Stats", 
-                          values=c("solid", "longdash")) +
-    ggtitle("Passive velocity profiles in binned raw time")
-```
-
-![](SocialSimon_files/figure-html/active_vel-2.png)<!-- -->
 
 
 # Statistical analysis
@@ -952,28 +564,17 @@ One  approach is to use 101 paired-samples t tests to compare the  x-coordinate
 of participants' mean trajectories for two conditions at each individual time step. 
 
 
-```r
-xpos.ttests <- 
-    with(avg.tn.trajectories.active,
-         sapply(unique(steps),function(i){
-             t.test(xpos[trial.type=="congruent" & steps==i],
-                    xpos[trial.type=="incongruent" & steps==i],
-                    paired = TRUE)$p.value})
-    )
-
-# Retrieve all significant t-tests
-which.sig <- which(xpos.ttests<.05)
-# Number of significant t-tests
-n.sig <- sum(xpos.ttests<.05,na.rm=TRUE)
-# Number of adjacent significant t-tests (minus 1)
-# table(diff(which(xpos_t_tests<.05)))
+```
+## `.cols` has been renamed and is deprecated, please use `.vars`
+## `.cols` has been renamed and is deprecated, please use `.vars`
 ```
 
-The test revealed a sequence of 0 significant t-tests on the difference
-between x-coordinates in congruent and incongruent trials. In order to determine
-what is the minimum number of significant t-tests that qualifies as a pattern, a
-bootstrapping procedure would be required. However, in previous research 8 was
-the minimum so this number seems rather low by comparison.
+The test revealed a sequence of 0 and 4 significant t-tests in
+conditions 3 and 4 respectively, on the difference between x-coordinates in congruent 
+and incongruent trials. In order to determine what is the minimum number of 
+significant t-tests that qualifies as a pattern, a bootstrapping procedure would 
+be required. However, in previous research 8 was the minimum so this number seems 
+rather low by comparison.
 
 ## Anovas on binned trajectories
 
@@ -984,25 +585,50 @@ type) ANOVA.
 
 
 ```r
-avg.tn.trajectory.bins <-  mt_aggregate_per_subject(activedata, 
-                                                    use="av_tn_trajectories",
-                                                    use2_variables="trial.type",
-                                                    subject_id="personid")
+avg.tn.trajectory.bins <-  
+    mt_aggregate_per_subject(active.straight, 
+                            use="av_tn_trajectories",
+                            use2_variables=c("condition", "trial.type"),
+                            subject_id="personid")
 avg.tn.trajectory.bins$bin <- factor(avg.tn.trajectory.bins$steps)
 
 aov_ez(data=avg.tn.trajectory.bins,
        id="personid", dv="xpos", within = c("trial.type", "bin"),
+       between="condition",
        anova_table = list(es=c("ges", "pes"), correction=c("GG")))
+```
+
+```
+## Warning: Missing values for following ID(s):
+## c4p13, c4p19, c4p4
+## Removing those cases from the analysis.
+```
+
+```
+## Warning in aov(formula(paste(dv.escaped, "~", paste(c(between.escaped,
+## within.escaped), : Error() model is singular
 ```
 
 ```
 ## Anova Table (Type 3 tests)
 ## 
 ## Response: xpos
-##           Effect          df  MSE          F    ges pes p.value
-## 1     trial.type       1, 21 0.00       0.24 <.0001 .01     .63
-## 2            bin 1.39, 29.17 0.02 355.38 ***    .80 .94  <.0001
-## 3 trial.type:bin 1.64, 34.51 0.00       2.53  .0003 .11     .10
+##                     Effect          df  MSE           F    ges  pes
+## 1                condition       1, 32 0.02        0.04  .0008 .001
+## 2               trial.type       1, 32 0.00        0.46 <.0001  .01
+## 3     condition:trial.type       1, 32 0.00        2.24  .0003  .07
+## 4                      bin 1.91, 61.02 0.00 1520.11 ***    .93  .98
+## 5            condition:bin 1.91, 61.02 0.00        1.81    .02  .05
+## 6           trial.type:bin 1.96, 62.73 0.00        0.73 <.0001  .02
+## 7 condition:trial.type:bin 1.96, 62.73 0.00        0.18 <.0001 .006
+##   p.value
+## 1     .85
+## 2     .50
+## 3     .14
+## 4  <.0001
+## 5     .17
+## 6     .48
+## 7     .83
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
 ## 
@@ -1034,43 +660,10 @@ avg.fast.trajectory.bins$bin <- factor(avg.fast.trajectory.bins$timestamps)
 aov_ez(data=avg.slow.trajectory.bins, id="personid", dv="xpos", 
        within = c("trial.type","bin"),
        anova_table = list(es=c("ges","pes"), correction=c("GG")))
-```
 
-```
-## Anova Table (Type 3 tests)
-## 
-## Response: xpos
-##           Effect          df  MSE          F   ges pes p.value
-## 1     trial.type       1, 21 0.00       0.90 .0002 .04     .35
-## 2            bin 1.64, 34.38 0.02 212.87 ***   .63 .91  <.0001
-## 3 trial.type:bin 1.49, 31.28 0.00       2.38  .001 .10     .12
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
-## 
-## Sphericity correction method: GG
-```
-
-```r
 aov_ez(data=avg.fast.trajectory.bins, id="personid", dv="xpos", 
        within = c("trial.type","bin"),
        anova_table = list(es=c("ges","pes"), correction=c("GG")))
-```
-
-```
-## Anova Table (Type 3 tests)
-## 
-## Response: xpos
-##           Effect          df  MSE          F    ges pes p.value
-## 1     trial.type       1, 20 0.00       0.61 <.0001 .03     .45
-## 2            bin 1.41, 28.12 0.02 323.64 ***    .84 .94  <.0001
-## 3 trial.type:bin 1.85, 37.05 0.00       1.47  .0003 .07     .24
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
-## 
-## Sphericity correction method: GG
-```
-
-```r
 # TODO: also velocity
 # also on eulidean distance
 ```
@@ -1088,67 +681,23 @@ positions, area under curve, x flips) differs between congruent and incogruent
 trials, separately for active and passive data.
 
 
-```r
-aggregated.measures <- mt_aggregate_per_subject(mtdata, 
-                                                use = 'measures',
-                                                subject_id = "personid", 
-                                                use2_variables = c("trial.type", 
-                                                                   "role.type"))
-
-aggregated.measures %>%
-    group_by(role.type, trial.type) %>%
-    select(-personid) %>%
-    summarize_all(.funs = c("mean","sd")) ->
-    measures.summary
-
-# paired t-tests on measures separately for active and passive data
-measures <- colnames(aggregated.measures)[4:length(colnames(aggregated.measures))]
-n.measures <- length(measures)
-outcomes <- matrix(nrow=n.measures*2, ncol=9)
-
-for (i in seq(1, n.measures)) {
-    m <- measures[i]
-    active <- t.test(eval(as.symbol(m)) ~ trial.type, 
-                     data=filter(aggregated.measures, role.type=='active'), 
-                     paired=TRUE)
-    r <- round(sqrt(active$statistic^2 / (active$statistic^2 + active$parameter)), 3)
-    new.row <- c(m, 'active', round(active$statistic, 3), active$parameter, 
-                 round(active$p.value, 5), round(active$conf.int[1], 3), 
-                 round(active$conf.int[2], 3), round(active$estimate, 3), r)
-    outcomes[2*i-1,] <- new.row
-
-    passive <- t.test(eval(as.symbol(m)) ~ trial.type, 
-                      data=filter(aggregated.measures, role.type=='passive'), 
-                      paired=TRUE)
-    r <- round(sqrt(active$statistic^2 / (active$statistic^2 + active$parameter)), 3)
-    new.row <- c(m, 'passive', round(passive$statistic, 3), passive$parameter, 
-             round(passive$p.value, 5), round(passive$conf.int[1], 3), 
-             round(passive$conf.int[2], 3), round(passive$estimate, 3), r)
-    outcomes[2*i,] <- new.row
-}
-
-outcomes <- data.frame(outcomes)
-colnames(outcomes) <- c('measure', 'type', 't', 'df', 'p', 'lower.conf', 
-                        'upper.conf', 'estimate', 'effect')
-
-for(i in c(3:ncol(outcomes))) {
-    outcomes[,i] <- as.numeric(as.character(outcomes[,i]))
-}
-
-
-significant <- filter(outcomes, p<0.05)
-kable(significant)
-```
-
 
 
 measure           type            t   df         p   lower.conf   upper.conf   estimate   effect
 ----------------  --------  -------  ---  --------  -----------  -----------  ---------  -------
 ypos_max          active     -2.141   21   0.04416       -0.006        0.000     -0.003    0.423
-MD_above          passive    -2.260   21   0.03459       -0.015       -0.001     -0.008    0.289
+MD_above          passive    -2.260   21   0.03456       -0.015       -0.001     -0.008    0.289
 MD_above_time     active     -2.929   21   0.00802      -33.459       -5.675    -19.567    0.539
-ypos_flips        passive    -2.218   21   0.03773       -0.091       -0.003     -0.047    0.280
-initiation_time   passive     3.320   21   0.00326        1.591        6.928      4.260    0.059
+ypos_flips        passive    -2.186   21   0.04025       -0.090       -0.002     -0.046    0.280
+initiation_time   passive     3.314   21   0.00330        1.583        6.917      4.250    0.059
+
+
+
+measure        type            t   df         p   lower.conf   upper.conf   estimate   effect
+-------------  --------  -------  ---  --------  -----------  -----------  ---------  -------
+xpos_max       passive    -2.886   13   0.01275       -0.022       -0.003     -0.012    0.280
+MAD_time       passive     2.357   13   0.03478        0.952       21.893     11.423    0.288
+vel_max_time   passive     3.080   13   0.00878        2.763       15.744      9.253    0.457
 
 From these results we can observe several things:
 
@@ -1251,11 +800,7 @@ ggplot(data=active.adjusted.summary, aes(x=trial.type, AUC_mean)) +
     geom_bar(stat = "identity") +
     geom_errorbar(bars, width=0.25) +
     ggtitle("Area under curve in active data")
-```
 
-![](SocialSimon_files/figure-html/measure_plots-1.png)<!-- -->
-
-```r
 bars.raw <- compute.errorbars(active.adjusted.summary$RT_mean, 
                               active.adjusted.summary$RT_sd)
 bars <- aes(ymax = bars.raw[c(2, 4)], ymin = bars.raw[c(1, 3)])
@@ -1263,11 +808,7 @@ ggplot(data=active.adjusted.summary, aes(x=trial.type, RT_mean)) +
     geom_bar(stat = "identity") +
     geom_errorbar(bars, width=0.25) +
     ggtitle("Reaction times in active data")
-```
 
-![](SocialSimon_files/figure-html/measure_plots-2.png)<!-- -->
-
-```r
 bars.raw <- compute.errorbars(passive.adjusted.summary$ypos_flips_mean, 
                               passive.adjusted.summary$ypos_flips_sd)
 bars <- aes(ymax = bars.raw[c(2, 4)], ymin = bars.raw[c(1, 3)])
@@ -1276,8 +817,6 @@ ggplot(data=passive.adjusted.summary, aes(x=trial.type, ypos_flips_mean)) +
     geom_errorbar(bars, width=0.25) +
     ggtitle("Y flips in passive data")
 ```
-
-![](SocialSimon_files/figure-html/measure_plots-3.png)<!-- -->
 
 
 # Distributional analyses
@@ -1333,8 +872,8 @@ bm.check
 ```
 ## $BC
 ##    trial.type     z_MAD     z_AUC      z_AD
-## 1   congruent 0.2540758 0.2168704 0.1862008
-## 2 incongruent 0.2429527 0.2431667 0.2104477
+## 1   congruent 0.2600469 0.2264174 0.1967166
+## 2 incongruent 0.2598736 0.2337273 0.2051982
 ```
 
 A distribution is considered bimodal if BC > 0.555. In our case both distribution
@@ -1368,6 +907,7 @@ mt_plot(activedata, use="sp_trajectories",
 ```
 
 ![](SocialSimon_files/figure-html/prototypes-2.png)<!-- -->
+
 Even in the presence of some variability of trajectories, it seems that their
 vast majority is straight.
 
@@ -1472,11 +1012,11 @@ ggplot(components.long, aes(x=steps, y=value, color=component)) +
 ![](SocialSimon_files/figure-html/pca-3.png)<!-- -->
 
 Given the resulting plots, we could surmise that the first component, which explains
-about 77% of variance in active trials and 
-83% in passive trials, reflects the constant tendency to move in a certain direction. The second component, which explains about 
-14% in all types of trials decreases in congruent 
+about 69% of variance in active trials and 
+75% in passive trials, reflects the constant tendency to move in a certain direction. The second component, which explains about 
+20% in all types of trials decreases in congruent 
 active trials while it increases in all other types. Finally, the third
-component that explains 8% in active and 
+component that explains 9% in active and 
 2% in passive trials has also different shape between these
 two types of trials.
 
@@ -1540,8 +1080,8 @@ mt_aggregate(activedata, subject_id = "personid",
 
 ```
 ##    trial.type sample_entropy
-## 1   congruent     0.09562019
-## 2 incongruent     0.09761750
+## 1   congruent     0.09608580
+## 2 incongruent     0.09717253
 ```
 
 ```r
@@ -1553,13 +1093,13 @@ t.test(sample_entropy~trial.type, data=agg.entropy.active, paired=TRUE)
 ## 	Paired t-test
 ## 
 ## data:  sample_entropy by trial.type
-## t = -1.6069, df = 21, p-value = 0.123
+## t = -1.1591, df = 38, p-value = 0.2536
 ## alternative hypothesis: true difference in means is not equal to 0
 ## 95 percent confidence interval:
-##  -0.0045821345  0.0005875044
+##  -0.0029847149  0.0008112553
 ## sample estimates:
 ## mean of the differences 
-##            -0.001997315
+##             -0.00108673
 ```
 
 ```r
@@ -1578,8 +1118,8 @@ mt_aggregate(passivedata, subject_id = "personid",
 
 ```
 ##    trial.type sample_entropy
-## 1   congruent     0.08395626
-## 2 incongruent     0.08638216
+## 1   congruent     0.08248634
+## 2 incongruent     0.08433156
 ```
 
 ```r
@@ -1591,13 +1131,13 @@ t.test(sample_entropy~trial.type, data=agg.entropy.passive, paired=TRUE)
 ## 	Paired t-test
 ## 
 ## data:  sample_entropy by trial.type
-## t = -1.6863, df = 21, p-value = 0.1065
+## t = -1.7216, df = 35, p-value = 0.09398
 ## alternative hypothesis: true difference in means is not equal to 0
 ## 95 percent confidence interval:
-##  -0.0054176741  0.0005658721
+##  -0.004021170  0.000330721
 ## sample estimates:
 ## mean of the differences 
-##            -0.002425901
+##            -0.001845224
 ```
 
 ```r
@@ -1651,53 +1191,61 @@ get.sample.trials <- function(couple.data) {
     unique.trials <- unique(couple.data$trial)
     sample.trials <- sample(unique.trials, 20)
     return(sample.trials)
-    }
+}
 
 exp3 %>% select(pair, personid, person, trial, x, y) %>%
     group_by(pair) %>% filter(., trial %in% get.sample.trials(.)) -> 
-    sampled.data
+    sampled.data3
 
-sampled.params <- data.frame()
-couples <- as.integer(unique(sampled.data$pair))
+exp4 %>% select(pair, personid, person, trial, x, y) %>%
+    filter(!(pair %in% c(2, 7, 10))) %>%
+    group_by(pair) %>% filter(., trial %in% get.sample.trials(.)) -> 
+    sampled.data4
 
 # calculate optimized parameters for sampled trials
-for (num in couples) {
-    couple.data <- sampled.data[sampled.data$pair==num,]
-    trials <- as.integer(unique(couple.data$trial))
-    for (num2 in trials) {
-        trial.data <- couple.data[couple.data$trial==num2,]
-        p1 <- trial.data[trial.data$person=='p1',]
-        p2 <- trial.data[trial.data$person=='p2',]
-        params <- try(as.data.frame(optimizeParam(p1$x, p2$x, par)), 
-                      silent=TRUE)
-        if ('try-error' %in% class(params)) {
-            next
-        }
-        else if (dim(params)[1] == 0) {
-            next
-        }
-        else {
-            params$pair <- num
-            params$trial <- num2
-            sampled.params <- rbind(sampled.params, params)
+calculate.params <- function(sampled.data) {
+    sampled.params <- data.frame()
+    couples <- as.integer(unique(sampled.data$pair))
+    for (num in couples) {
+        couple.data <- sampled.data[sampled.data$pair==num,]
+        trials <- as.integer(unique(couple.data$trial))
+        for (num2 in trials) {
+            trial.data <- couple.data[couple.data$trial==num2,]
+            p1 <- trial.data[trial.data$person=='p1',]
+            p2 <- trial.data[trial.data$person=='p2',]
+            params <- try(as.data.frame(optimizeParam(p1$x, p2$x, par)), 
+                          silent=TRUE)
+            if ('try-error' %in% class(params)) {
+                next
+            }
+            else if (dim(params)[1] == 0) {
+                next
+            }
+            else {
+                params$pair <- num
+                params$trial <- num2
+                sampled.params <- rbind(sampled.params, params)
+            }
         }
     }
+    return(sampled.params)
 }
 
-# take the radius, delay and embedding dimensions to be the median of
-# all obtained values
-r = mean(sampled.params$radius)
-d = median(sampled.params$delay)
-e = median(sampled.params$emddim)
-
-radius = r; delay = d; embed =  e; 
-rescale =  1; normalize = 0; 
-minvertline = 2; mindiagline = 2; 
-whiteline = FALSE; recpt = FALSE; tw = 0
-
+sampled.params3 <- calculate.params(sampled.data3)
+sampled.params4 <- calculate.params(sampled.data4)
 
 # get RQA measures from all trials
-get.rqa <- function(trial.data) {
+get.rqa <- function(trial.data, sampled.params) {
+    # take the radius, delay and embedding dimensions to be the median of
+    # all obtained values
+    radius = mean(sampled.params$radius)
+    delay = median(sampled.params$delay)
+    embed = 2 # this most frequently comes out as 2
+
+    rescale =  1; normalize = 0; 
+    minvertline = 2; mindiagline = 2; 
+    whiteline = FALSE; recpt = FALSE; tw = 0
+
     persons <- unique(trial.data$personid)
     p1 <- trial.data[trial.data$personid==persons[1],]
     p2 <- trial.data[trial.data$personid==persons[2],]
@@ -1713,9 +1261,51 @@ get.rqa <- function(trial.data) {
     return(metrics)
 }
 
-exp3 %>% group_by(pair, trial) %>% do(get.rqa(.)) ->
-    all.metrics
+exp3 %>% group_by(pair, trial) %>% do(get.rqa(., sampled.params3)) ->
+    all.metrics3
+exp4 %>% filter(!(pair %in% c(2, 7, 10))) %>%
+    group_by(pair, trial) %>% do(get.rqa(., sampled.params4)) ->
+    all.metrics4
 ```
+
+
+```r
+# test
+all.metrics3 <- ungroup(all.metrics3)
+all.metrics3 %>% 
+    group_by(pair) %>% 
+    summarize_all(funs(mean(., na.rm=TRUE))) %>%
+    select(-trial) ->
+    all.metrics.summary3
+all.metrics.summary3$cond <- as.character(3)
+
+all.metrics4 <- ungroup(all.metrics4)
+all.metrics4 %>% 
+    group_by(pair) %>% 
+    summarize_all(funs(mean(., na.rm=TRUE))) %>%
+    select(-trial) ->
+    all.metrics.summary4
+all.metrics.summary4$cond <- as.character(4)
+
+all.metrics.summary <- rbind(all.metrics.summary3, all.metrics.summary4)
+
+p1 <- ggplot(all.metrics.summary, aes(x=cond, y=RR)) + 
+    geom_bar(stat = "summary", fun.y = "mean") +
+    ggtitle("Recurrence rate in two social conditions")
+p2 <- ggplot(all.metrics.summary, aes(x=cond, y=DET)) + 
+    geom_bar(stat = "summary", fun.y = "mean") +
+    ggtitle("Recurrence rate in two social conditions")
+p3 <- ggplot(all.metrics.summary, aes(x=cond, y=maxL)) + 
+    geom_bar(stat = "summary", fun.y = "mean") +
+    ggtitle("Recurrence rate in two social conditions")
+p4 <- ggplot(all.metrics.summary, aes(x=cond, y=rENTR)) + 
+    geom_bar(stat = "summary", fun.y = "mean") +
+    ggtitle("Recurrence rate in two social conditions")
+
+multiplot(p1, p2, p3, p4, cols=2)
+```
+
+![](SocialSimon_files/figure-html/test_social_rqas-1.png)<!-- -->
 
 Having computed the CRQA metrics, one can visualize the different trials, as
 well as perform statistical analyses on the measures obtained.
@@ -1739,91 +1329,6 @@ which coupling (as indexed by RR and determinism) has been estimated to be low
 and high.
 
 
-```r
-highestRec <- all.metrics[which(all.metrics$RR == max(all.metrics$RR)),]
-
-hTr <- filter(exp3, pair==highestRec$pair, trial==highestRec$trial)
-resH <- crqa(hTr[hTr$person=='p1',]$x, hTr[hTr$person=='p2',]$x, 
-             delay, embed, rescale, radius,
-             normalize, minvertline, mindiagline, tw,  whiteline, recpt)
-# plot
-RP <- resH$RP
-RP <- matrix(as.numeric(RP), nrow = ncol(RP))
-cols <- c("white","blue4")
-# image(RP, xlab = "", ylab = "", col = cols)
-
-ggplot(hTr, aes(x=x, y=y, color=person)) + geom_path() +
-    xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Raw trajectories in a trial with highest recurrence rate")
-```
-
-![](SocialSimon_files/figure-html/rqa_plots-1.png)<!-- -->
-
-```r
-all.metrics.positive <- all.metrics[which(all.metrics$RR > 0),]
-lowestRec <- all.metrics.positive[which(all.metrics.positive$RR == 
-                                   min(all.metrics.positive$RR)),]
-
-lTr <- filter(exp3, pair==lowestRec$pair, trial==lowestRec$trial)
-resL <- crqa(lTr[lTr$person=='p1',]$x, lTr[lTr$person=='p2',]$x, 
-             delay, embed, rescale, radius,
-             normalize, minvertline, mindiagline, tw,  whiteline, recpt)
-
-# plot
-RP <- resL$RP
-RP <- matrix(as.numeric(RP), nrow = ncol(RP))
-cols <- c("white","blue4")
-# image(RP, xlab = "", ylab = "", col = cols)
-
-ggplot(lTr, aes(x=x, y=y, color=person)) + geom_path() +
-    xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Raw trajectories in a trial with lowest recurrence rate")
-```
-
-![](SocialSimon_files/figure-html/rqa_plots-2.png)<!-- -->
-
-```r
-highestDET <- all.metrics[which(all.metrics$DET == max(all.metrics$DET,
-                                                       na.rm=TRUE)),]
-
-hTrDET <- filter(exp3, pair==highestDET$pair[1], trial==highestDET$trial[1])
-resHDET <- crqa(hTrDET[hTrDET$person=='p1',]$x, hTrDET[hTrDET$person=='p2',]$x, 
-             delay, embed, rescale, radius,
-             normalize, minvertline, mindiagline, tw,  whiteline, recpt)
-# plot
-RP <- resHDET$RP
-RP <- matrix(as.numeric(RP), nrow = ncol(RP))
-cols <- c("white","blue4")
-# image(RP, xlab = "", ylab = "", col = cols)
-
-ggplot(hTrDET, aes(x=x, y=y, color=person)) + geom_path() +
-    xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Raw trajectories in a trial with highest determinism")
-```
-
-![](SocialSimon_files/figure-html/rqa_plots-3.png)<!-- -->
-
-```r
-lowestDET <- all.metrics.positive[which(all.metrics.positive$DET == 
-                                            min(all.metrics.positive$DET, 
-                                                na.rm=TRUE)),]
-
-lTrDET <- filter(exp3, pair==lowestDET$pair, trial==lowestDET$trial)
-resL <- crqa(lTrDET[lTrDET$person=='p1',]$x, lTrDET[lTrDET$person=='p2',]$x, 
-             delay, embed, rescale, radius,
-             normalize, minvertline, mindiagline, tw,  whiteline, recpt)
-# plot
-RP <- resL$RP
-RP <- matrix(as.numeric(RP), nrow = ncol(RP))
-cols <- c("white","blue4")
-# image(RP, xlab = "", ylab = "", col = cols)
-
-ggplot(lTrDET, aes(x=x, y=y, color=person)) + geom_path() +
-    xlim(0, screen.width) + ylim(0, screen.height) +
-    ggtitle("Raw trajectories in a trial with lowest determinism")
-```
-
-![](SocialSimon_files/figure-html/rqa_plots-4.png)<!-- -->
 
 Subsequently we can see if coupling is higher within couples than across and whether
 it is affected by the presence of visual information (TODO: compare to coupling
@@ -1840,83 +1345,6 @@ people who actually performed it together than between people who merely perform
 the same task.
 
 
-```r
-all.metrics <- ungroup(all.metrics)
-all.metrics %>% 
-    group_by(pair) %>% 
-    summarize_all(funs(mean(., na.rm=TRUE))) %>%
-    select(-trial) ->
-    all.metrics.summary
-all.metrics.summary$cond <- "real"
-
-exp3 %>%
-  group_by(personid) %>%
-  mutate(count = n()) ->
-    exp3
-
-exp3$pair <- as.integer(as.character(exp3$pair))
-pairids <- rep(unique(exp3$pair), each=2)
-counts <- rep(unique(exp3$count), each=2)
-
-i <- 0
-num.tests <- 10
-while (i < num.tests) {
-    df <- data.frame(count=counts, pairs=sample(pairids))
-    newpairs <- df[rep(seq_len(dim(df)[1]), df$count), 2]
-    exp3$fake <- newpairs
-    
-    exp3 %>% group_by(fake, trial) %>% 
-        do(get.rqa(.)) -> 
-        all.metrics
-    all.metrics <- ungroup(all.metrics)
-    
-    all.metrics %>% 
-        group_by(pair) %>% 
-        summarize_all(funs(mean(., na.rm=TRUE))) %>%
-        select(-c(trial, fake)) ->
-        new.metrics.summary
-    new.metrics.summary$cond <- paste0("fake", i)
-    all.metrics.summary <- rbind(all.metrics.summary, new.metrics.summary)
-    
-    i <- i+1
-}
-
-all.metrics.summary$cond <- as.factor(all.metrics.summary$cond)
-
-outcomes <- matrix(nrow=num.tests, ncol = 2)
-for (i in 0:(num.tests-1)) {
-    surrogate <- paste0('fake',i)
-    dat <- filter(all.metrics.summary, cond==surrogate | cond=='real')
-    res <- t.test(data=dat, RR~cond, paired=FALSE)
-    new.row <- c(surrogate, round(res$p.value, 5))
-    outcomes[i+1,] <- new.row
-}
-outcomes <- as.data.frame(outcomes)
-colnames(outcomes) <- c("comparison.group", "p.value")
-outcomes
-```
-
-```
-##    comparison.group p.value
-## 1             fake0 0.90845
-## 2             fake1 0.33642
-## 3             fake2 0.64938
-## 4             fake3 0.90299
-## 5             fake4 0.72614
-## 6             fake5 0.31054
-## 7             fake6 0.47386
-## 8             fake7 0.53362
-## 9             fake8   0.943
-## 10            fake9 0.95376
-```
-
-```r
-ggplot(all.metrics.summary, aes(x=cond, y=RR)) + 
-    geom_bar(stat = "summary", fun.y = "mean") +
-    ggtitle("Recurrence rate in real and fake couples")
-```
-
-![](SocialSimon_files/figure-html/rqa_test-1.png)<!-- -->
 
 From the plot as well as t-test it seems that real couples do not show higher
 level of coupling than fake pairs. This, together with a lack of social Simon
