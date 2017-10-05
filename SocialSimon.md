@@ -46,12 +46,6 @@ We then begin by loading the data and reformatting it for easier processing.
 
 
 
-```r
-exp1 <- load.experiment(1)
-exp2 <- load.experiment(2)
-exp3 <- load.experiment(3)
-exp4 <- load.experiment(4)
-```
 
 Then we add the coding for independent variables on 
 
@@ -63,22 +57,10 @@ its location
 
 
 
-```r
-exp1 <- add.current.vars(exp1)
-exp2 <- add.current.vars(exp2)
-exp3 <- add.current.vars(exp3)
-exp4 <- add.current.vars(exp4)
-```
 
 
 
 
-```r
-exp1 <- add.previous.vars(exp1)
-exp2 <- add.previous.vars(exp2)
-exp3 <- add.previous.vars(exp3)
-exp4 <- add.previous.vars(exp4)
-```
 
 The y-coordinates are immediately flipped vertically because the package that was
 used for collecting the data (Matlab Psychtoolbox) encodes the screen's top left 
@@ -98,12 +80,6 @@ deadlines and a correct response was given.
 
 
 
-```r
-exp1.complete <- remove.failed(exp1)
-exp2.complete <- remove.failed(exp2)
-exp3.complete <- remove.failed(exp3)
-exp4.complete <- remove.failed(exp4)
-```
 
 Complete trajectories will be needed for the dynamical part of our analysis at 
 the end of this script. For remaining analyses we need to extract
@@ -113,12 +89,6 @@ button.
 
 
 
-```r
-exp1.subset <- get.subset(exp1.complete)
-exp2.subset <- get.subset(exp2.complete)
-exp3.subset <- get.subset(exp3.complete)
-exp4.subset <- get.subset(exp4.complete)
-```
 
 ![](SocialSimon_files/figure-html/12_plot_extracted-1.png)<!-- -->
 
@@ -128,12 +98,6 @@ coordinate space, where x is in range [-1, 1] and y in range [0, 1.5].
 
 
 
-```r
-exp1.scaled <- get.scaled(exp1.subset)
-exp2.scaled <- get.scaled(exp2.subset)
-exp3.scaled <- get.scaled(exp3.subset)
-exp4.scaled <- get.scaled(exp4.subset)
-```
 
 ![](SocialSimon_files/figure-html/15_plot_rescaled-1.png)<!-- -->
 
@@ -143,12 +107,6 @@ to start at 0.
 
 
 
-```r
-exp1.aligned <- get.aligned(exp1.scaled)
-exp2.aligned <- get.aligned(exp2.scaled)
-exp3.aligned <- get.aligned(exp3.scaled)
-exp4.aligned <- get.aligned(exp4.scaled)
-```
 
 ![](SocialSimon_files/figure-html/18_plot_aligned-1.png)<!-- -->
 
@@ -194,12 +152,6 @@ measures.
 
 
 
-```r
-exp1.clean <- get.clean(exp1.aligned)
-exp2.clean <- get.clean(exp2.aligned)
-exp3.clean <- get.clean(exp3.aligned)
-exp4.clean <- get.clean(exp4.aligned)
-```
 
 As a last step, a look at sampling rate distribution to see whether it reveals 
 any outliers that could indicate missing data or wrong recording.
@@ -241,12 +193,6 @@ add another variable to the data, which indicates whether the trial was fast or 
 
 
 
-```r
-exp1.clean <- time.outliers(exp1.clean)
-exp2.clean <- time.outliers(exp2.clean)
-exp3.clean <- time.outliers(exp3.clean)
-exp4.clean <- time.outliers(exp4.clean)
-```
 
 ![](SocialSimon_files/figure-html/29_plot_rts-1.png)<!-- -->
 
@@ -258,49 +204,17 @@ After we produced clean data for all conditions, we combine the two social ones
 into a single data frame.
 
 
-```r
-exp.clean <- rbind(exp3.clean, exp4.clean)
-```
 
 For the analysis we will use a mousetrap package. Accordingly, the next step is 
 to transform the data into a mousetrap object.
 
 
-```r
-mtdata1 <- mt_import_long(exp1.clean, 
-                        xpos_label = 'x.flipped', 
-                        ypos_label = 'y.aligned', 
-                        timestamps_label = 't.aligned', 
-                        mt_id_label = c('personid','trial'), 
-                        mt_seq_label = 'sampling.order', 
-                        reset_timestamps = FALSE)
-mtdata2 <- mt_import_long(exp2.clean, 
-                        xpos_label = 'x.flipped', 
-                        ypos_label = 'y.aligned', 
-                        timestamps_label = 't.aligned', 
-                        mt_id_label = c('personid','trial'), 
-                        mt_seq_label = 'sampling.order', 
-                        reset_timestamps = FALSE)
-
-mtdata <- mt_import_long(exp.clean, 
-                        xpos_label = 'x.flipped', 
-                        ypos_label = 'y.aligned', 
-                        timestamps_label = 't.aligned', 
-                        mt_id_label = c('personid','trial'), 
-                        mt_seq_label = 'sampling.order', 
-                        reset_timestamps = FALSE)
-```
 
 As a final pre-processing step, we perform time normalization on the data, in 
 which the times and coordinates are linearly interpolated so that each trajectory 
 contains the same number of recorded points, typically this is set to 101 points.
 
 
-```r
-mtdata1 <- mt_time_normalize(mtdata1)
-mtdata2 <- mt_time_normalize(mtdata2)
-mtdata <- mt_time_normalize(mtdata)
-```
 
 We need to check that all participants have a balanced number of observations 
 for different variables of interest.
@@ -308,12 +222,6 @@ for different variables of interest.
 
 
 
-```r
-counts1 <- get.counts(exp1.complete)
-counts2 <- get.counts(exp2.complete)
-counts3 <- get.counts(exp3.complete)
-counts4 <- get.counts(exp4.complete)
-```
 
 ![](SocialSimon_files/figure-html/35_plot_counts-1.png)<!-- -->![](SocialSimon_files/figure-html/35_plot_counts-2.png)<!-- -->![](SocialSimon_files/figure-html/35_plot_counts-3.png)<!-- -->![](SocialSimon_files/figure-html/35_plot_counts-4.png)<!-- -->
 
@@ -340,18 +248,6 @@ We see that indeed, 3 participants in condition 4 misunderstood the instructions
 and therefore need to be removed from further analysis.
 
 
-```r
-mtdata1 <- mt_subset(mtdata1, personid != "c1p5")
-mtdata2 <- mt_subset(mtdata2, personid != "c2p11")
-mtdata2 <- mt_subset(mtdata2, !(personid == "c2p16" & role.type == "passive"))
-# redo this later
-mtdata2 <- mt_subset(mtdata2, !(personid == "c2p17" & role.type == "passive"))
-
-mtdata <- mt_subset(mtdata, !(condition == 4 & (personid %in% 
-                                                    c("c4p4", "c4p13", "c4p19"))))
-mtdata <- mt_subset(mtdata, !(condition == 4 & role.type == 'passive' & 
-                                    (personid %in% c("c4p3", "c4p14", "c4p20"))))
-```
 
 
 
@@ -368,20 +264,6 @@ from the raw time data. Next, we calculate a variety of measures on normalized
 data. 
 
 
-```r
-# get mt measures for all experiments
-mtdata1 <- mt_derivatives(mtdata1, use="trajectories")
-mtdata1 <- mt_angles(mtdata1, use="trajectories")
-mtdata1 <- mt_measures(mtdata1, use="trajectories", save_as = "measures")
-
-mtdata2 <- mt_derivatives(mtdata2, use="trajectories")
-mtdata2 <- mt_angles(mtdata2, use="trajectories")
-mtdata2 <- mt_measures(mtdata2, use="trajectories", save_as = "measures")
-
-mtdata <- mt_derivatives(mtdata, use="trajectories")
-mtdata <- mt_angles(mtdata, use="trajectories")
-mtdata <- mt_measures(mtdata, use="trajectories", save_as = "measures")
-```
 
 
 
@@ -426,31 +308,30 @@ to examine movement duration in different stages of the trajectory. Finally,
 coordinate flips and reversals are a proxy for movement complexity (which we
 later examine also with entropy-based measure).
 
+For the purpose of this paper we will focus on the shape of movement trajectories
+and velocity profiles in the exploratory part of our analysis. In the inferential
+part we will examine only overall reaction time RT, area under curve AUC and sample
+entropy ENT. 
 
-Our data contains trials in which a participant's role was 'active', i.e.,
-it was their turn to respond to the cue and trials in which the role was 'passive',
-i.e., their task was to refrain from responding. It is reasonable to assume
-that different cognitive processes are at play in these types of trials and that
-different trajectories should result. Therefore, for further analysis we split 
-the data into two groups: active and passive data.
+Our data for conditions 2 to 4 contains trials in which a participant's role was 
+'active', i.e., it was their turn to respond to the cue and trials in which the role was 'passive', i.e., their task was to refrain from responding. 
+It is reasonable to assume that different cognitive processes are at play in 
+these types of trials and that different trajectories should result. 
+Therefore, for further analysis we split the data into two groups: 
+active and passive data.
 
 
-```r
-# we split only the social conditions by role
-activedata <- mt_subset(mtdata, role.type=='active')
-passivedata <- mt_subset(mtdata, role.type=='passive')
-```
 
 
 # Exploratory Analysis
 
-First we should visually examine trajectories averaged across trials
+First we will visually examine trajectories averaged across trials
 for each participant and across participants. They are averaged separately
 for each independent variable of interest, which would allow us to reveal
 different patterns depending on the variables we decide to include (if there are
 such patterns in the data obviously).
 
-Our independent variables that we will examine are:
+Our independent variables of interest are:
 
 * trial type: congruent or incongruent
 * previous trial type: whether trial at time t-1 was congruent or not
@@ -490,7 +371,7 @@ the starting position as soon as it became clear it is not their trial.
 
 We can confirm the latter observation by also plotting a histogram of maximum y 
 coordinate reached in passive trials. The thresholds indicated on the plot are the 
-locations of the start boundary, the y-coordinated that had to be crossed in order 
+locations of the start boundary, the y-coordinate that had to be crossed in order 
 for the cue to appear and the lower response box boundary. As can be seen from the plot,
 the majority of trajectories goes beyond that last threshold.
 
@@ -531,23 +412,23 @@ different movement trajectories also differ in their velocity profiles.
 Here we plot velocity profiles in binned raw time, together with approximate
 time in which cue appeared (mean appearance time being 294 ms).
 
-![](SocialSimon_files/figure-html/plot_velocity-1.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-2.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-3.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-4.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-5.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-6.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-7.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-8.png)<!-- -->![](SocialSimon_files/figure-html/plot_velocity-9.png)<!-- -->
+![](SocialSimon_files/figure-html/51_plot_velocity-1.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-2.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-3.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-4.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-5.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-6.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-7.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-8.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-9.png)<!-- -->
 
 
 
 
 # Statistical analysis
 
-Exploratory analysis suggests that apart from an aberrant couple 7, there do not
-seem to be any differences in trajectories or velocity profiles either in active
-or passive data, nor when we take into account independent variables of interest
-(current trial type, previous trial type, previous role).
+Exploratory analysis suggests that conditions differ in how the type of trial
+affects movement trajectories. There seem to be notable differences in the individual
+Simon condition, with incongruent trials producing more curved movement path. There
+seem to be no consistent differences in condition 2. The social conditions 3 and 4
+look most like condition 2 with some exceptions.
 
-We will, however, perform statistical analyses to try to confirm these observations.
-
-Given the negative conclusions from the exploratory analysis, we will focus on 
-the difference between trajectories depending on current trial type (congruent vs
-incongruent) and ignore the effect of previous trial for the time being.
+In this part we will carry out statistical analyses to further probe these observations.
+For simplicity we will focus on the difference between trajectories depending on 
+current trial type only (congruent vs incongruent) and ignore the effect of previous 
+trial for the time being.
 
 
 ## Testing trajectories directly
@@ -564,19 +445,16 @@ One  approach is to use 101 paired-samples t tests to compare the  x-coordinate
 of participants' mean trajectories for two conditions at each individual time step. 
 
 
-```
-## `.cols` has been renamed and is deprecated, please use `.vars`
-## `.cols` has been renamed and is deprecated, please use `.vars`
-```
 
-The test revealed a sequence of 0 and 4 significant t-tests in
-conditions 3 and 4 respectively, on the difference between x-coordinates in congruent 
-and incongruent trials. In order to determine what is the minimum number of 
-significant t-tests that qualifies as a pattern, a bootstrapping procedure would 
-be required. However, in previous research 8 was the minimum so this number seems 
-rather low by comparison.
+The test revealed a sequence of 84, 12, 0 and 4 
+significant t-tests in conditions 1 to 4 respectively, on the difference between 
+x-coordinates in congruent and incongruent trials. In order to determine what is 
+the minimum number of significant t-tests that qualifies as a pattern, a bootstrapping 
+procedure would be required. However, we can state already that the difference between conditions seems notable and low in conditions 2-4 by comparison with previous
+research (where 8 was the minimum) and with condition 1.
 
-## Anovas on binned trajectories
+
+## Anovas on binned trajectories: TODO
 
 Other than looking at particular coordinates, we can also run tests on binned
 trajectories (both normalized and raw time), that we have also plotted above.
@@ -596,43 +474,6 @@ aov_ez(data=avg.tn.trajectory.bins,
        id="personid", dv="xpos", within = c("trial.type", "bin"),
        between="condition",
        anova_table = list(es=c("ges", "pes"), correction=c("GG")))
-```
-
-```
-## Warning: Missing values for following ID(s):
-## c4p13, c4p19, c4p4
-## Removing those cases from the analysis.
-```
-
-```
-## Warning in aov(formula(paste(dv.escaped, "~", paste(c(between.escaped,
-## within.escaped), : Error() model is singular
-```
-
-```
-## Anova Table (Type 3 tests)
-## 
-## Response: xpos
-##                     Effect          df  MSE           F    ges  pes
-## 1                condition       1, 32 0.02        0.04  .0008 .001
-## 2               trial.type       1, 32 0.00        0.46 <.0001  .01
-## 3     condition:trial.type       1, 32 0.00        2.24  .0003  .07
-## 4                      bin 1.91, 61.02 0.00 1520.11 ***    .93  .98
-## 5            condition:bin 1.91, 61.02 0.00        1.81    .02  .05
-## 6           trial.type:bin 1.96, 62.73 0.00        0.73 <.0001  .02
-## 7 condition:trial.type:bin 1.96, 62.73 0.00        0.18 <.0001 .006
-##   p.value
-## 1     .85
-## 2     .50
-## 3     .14
-## 4  <.0001
-## 5     .17
-## 6     .48
-## 7     .83
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
-## 
-## Sphericity correction method: GG
 ```
 
 The result tells us that there is an obvious significant difference in x positions
@@ -678,145 +519,235 @@ Having dealt with coordinates, we can move on to looking at dependent measures
 typically examined in movement trajectories. That is, the question here is whether
 any of the particular measures that summarize trajectories (e.g. maximum x or y
 positions, area under curve, x flips) differs between congruent and incogruent
-trials, separately for active and passive data.
+trials, separately for active and passive data. As stated before, we will only
+examine RT and AUC here and ENT in the next subsection.
 
 
 
-
-measure           type            t   df         p   lower.conf   upper.conf   estimate   effect
-----------------  --------  -------  ---  --------  -----------  -----------  ---------  -------
-ypos_max          active     -2.141   21   0.04416       -0.006        0.000     -0.003    0.423
-MD_above          passive    -2.260   21   0.03456       -0.015       -0.001     -0.008    0.289
-MD_above_time     active     -2.929   21   0.00802      -33.459       -5.675    -19.567    0.539
-ypos_flips        passive    -2.186   21   0.04025       -0.090       -0.002     -0.046    0.280
-initiation_time   passive     3.314   21   0.00330        1.583        6.917      4.250    0.059
+In what follows we will consider our study to employ a mixed design with 1
+between-subject (condition) and 1 within-subject variables (trial type).
 
 
 
-measure        type            t   df         p   lower.conf   upper.conf   estimate   effect
--------------  --------  -------  ---  --------  -----------  -----------  ---------  -------
-xpos_max       passive    -2.886   13   0.01275       -0.022       -0.003     -0.012    0.280
-MAD_time       passive     2.357   13   0.03478        0.952       21.893     11.423    0.288
-vel_max_time   passive     3.080   13   0.00878        2.763       15.744      9.253    0.457
-
-From these results we can observe several things:
-
-* in active data the time at which trajectory achieved maximum deviation
-towards the wrong response seems higher in incogruent trials; however,
-given that maximum deviation itself is not significant, it is unclear how to
-interpret this result
-* in active data also maximum y position seems significantly higher in 
-incongruent trials perhaps indicating that the decision to click was easier
-to reach in the congruent trials; however, given the absence of other significant
-results this outcome on its own is a rather weak evidence for an effect of the trial
-type
-* the remaining significant differences come from passive data with small
-effect sizes for maximum deviation and flips in y position, and a very small effect 
-for initiation time (probably an artifact)
-
-We can also plot the measures of interest and measures that seem to show
-significant difference.
+### Reaction time
 
 
 ```r
-N <- length(unique(mtdata$data$personid))
-df <- N-1
-
-aggregated.active <- filter(aggregated.measures, role.type=='active')
-
-aggregated.active %>%
-    group_by(personid) %>%
-    select(-c(role.type, trial.type)) %>%
-    summarize_all(.funs="mean") -> active.summary
-grandMeans.active <- colMeans(active.summary)
-
-adjustments.active <- active.summary
-for (row in 1:dim(adjustments.active)[1]) {
-    adjustments.active[row, 2:dim(adjustments.active)[2]] <- 
-        grandMeans.active[2:length(grandMeans.active)] - 
-        adjustments.active[row, 2:dim(adjustments.active)[2]]
-}
-adjustments.active <- rep(adjustments.active, 2)
-adjustments.active <- arrange(adjustments.active, personid)
-
-adjusted.active <- aggregated.active
-for (row in 1:dim(adjustments.active)[1]) {
-    adjusted.active[row, 4:dim(aggregated.active)[2]] <- 
-        adjusted.active[row, 4:dim(aggregated.active)[2]] + 
-        adjustments.active[row, 2:dim(adjustments.active)[2]]
-}
-
-adjusted.active %>%
-    select(-role.type) %>%
-    group_by(trial.type) %>%
-    select(-personid) %>%
-    summarize_all(.funs = c("mean","sd")) ->
-    active.adjusted.summary
-
-# same for passive data
-aggregated.passive <- filter(aggregated.measures, role.type=='passive')
-aggregated.passive %>%
-    group_by(personid) %>%
-    select(-c(role.type, trial.type)) %>%
-    summarize_all(.funs="mean") -> passive.summary
-grandMeans.passive <- colMeans(passive.summary)
-
-adjustments.passive <- passive.summary
-for (row in 1:dim(adjustments.passive)[1]) {
-    adjustments.passive[row, 2:dim(adjustments.passive)[2]] <- 
-        grandMeans.active[2:length(grandMeans.passive)] - 
-        adjustments.passive[row, 2:dim(adjustments.passive)[2]]
-}
-adjustments.passive <- rep(adjustments.passive, 2)
-adjustments.passive <- arrange(adjustments.passive, personid)
-
-adjusted.passive <- aggregated.passive
-for (row in 1:dim(adjustments.passive)[1]) {
-    adjusted.passive[row, 4:dim(aggregated.passive)[2]] <- 
-        adjusted.passive[row, 4:dim(aggregated.passive)[2]] + 
-        adjustments.passive[row, 2:dim(adjustments.passive)[2]]
-}
-
-adjusted.passive %>%
-    select(-role.type) %>%
-    group_by(trial.type) %>%
-    select(-personid) %>%
-    summarize_all(.funs = c("mean","sd")) ->
-    passive.adjusted.summary
-
-
-compute.errorbars <- function(measure_mean, measure_sd) {
-    se <- sqrt(measure_sd^2/N)
-    limits.raw <- c(measure_mean[1] + c(-1,1) * qt(.975, df) * se[1],
-                    measure_mean[2] + c(-1,1) * qt(.975, df) * se[2])
-    return(limits.raw)
-}
-
-
-bars.raw <- compute.errorbars(active.adjusted.summary$AUC_mean, 
-                              active.adjusted.summary$AUC_sd)
-bars <- aes(ymax = bars.raw[c(2, 4)], ymin = bars.raw[c(1, 3)])
-ggplot(data=active.adjusted.summary, aes(x=trial.type, AUC_mean)) +
-    geom_bar(stat = "identity") +
-    geom_errorbar(bars, width=0.25) +
-    ggtitle("Area under curve in active data")
-
-bars.raw <- compute.errorbars(active.adjusted.summary$RT_mean, 
-                              active.adjusted.summary$RT_sd)
-bars <- aes(ymax = bars.raw[c(2, 4)], ymin = bars.raw[c(1, 3)])
-ggplot(data=active.adjusted.summary, aes(x=trial.type, RT_mean)) + 
-    geom_bar(stat = "identity") +
-    geom_errorbar(bars, width=0.25) +
-    ggtitle("Reaction times in active data")
-
-bars.raw <- compute.errorbars(passive.adjusted.summary$ypos_flips_mean, 
-                              passive.adjusted.summary$ypos_flips_sd)
-bars <- aes(ymax = bars.raw[c(2, 4)], ymin = bars.raw[c(1, 3)])
-ggplot(data=passive.adjusted.summary, aes(x=trial.type, ypos_flips_mean)) + 
-    geom_bar(stat = "identity") +
-    geom_errorbar(bars, width=0.25) +
-    ggtitle("Y flips in passive data")
+by(all.measures.active$RT, list(all.measures.active$trial.type,
+                                 all.measures.active$condition), stat.desc, basic=FALSE)
 ```
+
+```
+## : congruent
+## : 1
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  749.2205597  747.1539672   18.1129065   38.0538045 6233.4702747 
+##      std.dev     coef.var 
+##   78.9523291    0.1056708 
+## -------------------------------------------------------- 
+## : incongruent
+## : 1
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 8.121267e+02 8.109753e+02 1.629599e+01 3.423661e+01 5.045627e+03 
+##      std.dev     coef.var 
+## 7.103258e+01 8.758908e-02 
+## -------------------------------------------------------- 
+## : congruent
+## : 2
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 6.915412e+02 7.363984e+02 4.931343e+01 1.036037e+02 4.620448e+04 
+##      std.dev     coef.var 
+## 2.149523e+02 2.918967e-01 
+## -------------------------------------------------------- 
+## : incongruent
+## : 2
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 6.867904e+02 7.443394e+02 5.303003e+01 1.114120e+02 5.343149e+04 
+##      std.dev     coef.var 
+## 2.311525e+02 3.105472e-01 
+## -------------------------------------------------------- 
+## : congruent
+## : 3
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 7.080067e+02 7.468482e+02 2.707784e+01 5.631145e+01 1.613061e+04 
+##      std.dev     coef.var 
+## 1.270063e+02 1.700564e-01 
+## -------------------------------------------------------- 
+## : incongruent
+## : 3
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 7.135585e+02 7.568695e+02 2.990607e+01 6.219309e+01 1.967621e+04 
+##      std.dev     coef.var 
+## 1.402719e+02 1.853317e-01 
+## -------------------------------------------------------- 
+## : congruent
+## : 4
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 7.074354e+02 7.563644e+02 3.380711e+01 7.166787e+01 1.942965e+04 
+##      std.dev     coef.var 
+## 1.393903e+02 1.842899e-01 
+## -------------------------------------------------------- 
+## : incongruent
+## : 4
+##       median         mean      SE.mean CI.mean.0.95          var 
+## 7.259981e+02 7.564996e+02 3.126759e+01 6.628432e+01 1.662025e+04 
+##      std.dev     coef.var 
+## 1.289196e+02 1.704159e-01
+```
+
+![](SocialSimon_files/figure-html/58_anova_measures_plots_rt-1.png)<!-- -->![](SocialSimon_files/figure-html/58_anova_measures_plots_rt-2.png)<!-- -->
+
+
+```
+## [1] <NA>
+## attr(,"contrasts")
+##   cond2vscond1 cond2vscond3 cond2vscond4
+## 1            1            0            0
+## 2            0            0            0
+## 3            0            1            0
+## 4            0            0            1
+## Levels: 1 2 3 4
+```
+
+```
+##               Model df      AIC      BIC    logLik   Test  L.Ratio p-value
+## baseline          1  4 1785.322 1797.470 -888.6613                        
+## trial.type.rt     2  5 1764.848 1780.033 -877.4239 1 vs 2 22.47472  <.0001
+## condition.rt      3  8 1770.147 1794.443 -877.0736 2 vs 3  0.70065  0.8731
+## rt.mix.model      4 11 1722.911 1756.318 -850.4557 3 vs 4 53.23574  <.0001
+```
+
+```
+##                                                  Value Std.Error DF
+## (Intercept)                                 736.398404 34.622346 73
+## trial.typeincongruent                         7.940998  5.900600 73
+## conditioncond2vscond1                        10.755563 48.963391 73
+## conditioncond2vscond3                        10.449809 47.264718 73
+## conditioncond2vscond4                        19.965969 50.382913 73
+## trial.typeincongruent:conditioncond2vscond1  55.880342  8.344708 73
+## trial.typeincongruent:conditioncond2vscond3   2.080295  8.055208 73
+## trial.typeincongruent:conditioncond2vscond4  -7.805809  8.586634 73
+##                                                t-value      p-value
+## (Intercept)                                 21.2694545 5.176712e-33
+## trial.typeincongruent                        1.3457951 1.825335e-01
+## conditioncond2vscond1                        0.2196654 8.267448e-01
+## conditioncond2vscond3                        0.2210911 8.256387e-01
+## conditioncond2vscond4                        0.3962845 6.930511e-01
+## trial.typeincongruent:conditioncond2vscond1  6.6965003 3.787050e-09
+## trial.typeincongruent:conditioncond2vscond3  0.2582547 7.969371e-01
+## trial.typeincongruent:conditioncond2vscond4 -0.9090651 3.663074e-01
+```
+
+
+### Area under curve
+
+
+```r
+by(all.measures.active$AUC, list(all.measures.active$trial.type,
+                                 all.measures.active$condition), stat.desc, basic=FALSE)
+```
+
+```
+## : congruent
+## : 1
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  0.353700830  0.347098780  0.016180164  0.033993262  0.004974156 
+##      std.dev     coef.var 
+##  0.070527698  0.203192009 
+## -------------------------------------------------------- 
+## : incongruent
+## : 1
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  0.438618889  0.423144547  0.010478345  0.022014187  0.002086119 
+##      std.dev     coef.var 
+##  0.045674048  0.107939588 
+## -------------------------------------------------------- 
+## : congruent
+## : 2
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  0.025300785  0.068998206  0.022792604  0.047885484  0.009870553 
+##      std.dev     coef.var 
+##  0.099350657  1.439902024 
+## -------------------------------------------------------- 
+## : incongruent
+## : 2
+##       median         mean      SE.mean CI.mean.0.95          var 
+##   0.02736986   0.07979365   0.02674971   0.05619906   0.01359540 
+##      std.dev     coef.var 
+##   0.11659930   1.46126028 
+## -------------------------------------------------------- 
+## : congruent
+## : 3
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  0.002014931  0.036793009  0.026512992  0.055136785  0.015464652 
+##      std.dev     coef.var 
+##  0.124356954  3.379907195 
+## -------------------------------------------------------- 
+## : incongruent
+## : 3
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  0.002656911  0.041002347  0.028998952  0.060306622  0.018500662 
+##      std.dev     coef.var 
+##  0.136017140  3.317301361 
+## -------------------------------------------------------- 
+## : congruent
+## : 4
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  -0.02155870   0.02673083   0.03474220   0.07365018   0.02051935 
+##      std.dev     coef.var 
+##   0.14324577   5.35882277 
+## -------------------------------------------------------- 
+## : incongruent
+## : 4
+##       median         mean      SE.mean CI.mean.0.95          var 
+##  -0.02223459   0.03120178   0.03550553   0.07526837   0.02143093 
+##      std.dev     coef.var 
+##   0.14639306   4.69181694
+```
+
+![](SocialSimon_files/figure-html/58_anova_measures_plots-1.png)<!-- -->![](SocialSimon_files/figure-html/58_anova_measures_plots-2.png)<!-- -->
+
+
+```
+##                Model df       AIC       BIC   logLik   Test  L.Ratio
+## baseline           1  4 -273.4277 -261.2798 140.7138                
+## trial.type.auc     2  5 -289.7842 -274.5994 149.8921 1 vs 2 18.35653
+## condition.auc      3  8 -361.6327 -337.3371 188.8163 2 vs 3 77.84852
+## auc.mix.model      4 11 -399.9932 -366.5867 210.9966 3 vs 4 44.36049
+##                p-value
+## baseline              
+## trial.type.auc  <.0001
+## condition.auc   <.0001
+## auc.mix.model   <.0001
+```
+
+```
+##                                                    Value  Std.Error DF
+## (Intercept)                                  0.068998206 0.02640397 73
+## trial.typeincongruent                        0.010795447 0.00804089 73
+## conditioncond2vscond1                        0.278100574 0.03734085 73
+## conditioncond2vscond3                       -0.032205198 0.03604539 73
+## conditioncond2vscond4                       -0.042267379 0.03842341 73
+## trial.typeincongruent:conditioncond2vscond1  0.065250320 0.01137154 73
+## trial.typeincongruent:conditioncond2vscond3 -0.006586108 0.01097703 73
+## trial.typeincongruent:conditioncond2vscond4 -0.006324490 0.01170121 73
+##                                                t-value      p-value
+## (Intercept)                                  2.6131758 1.088687e-02
+## trial.typeincongruent                        1.3425686 1.835718e-01
+## conditioncond2vscond1                        7.4476235 1.528370e-10
+## conditioncond2vscond3                       -0.8934623 3.745458e-01
+## conditioncond2vscond4                       -1.1000422 2.749281e-01
+## trial.typeincongruent:conditioncond2vscond1  5.7380392 2.038578e-07
+## trial.typeincongruent:conditioncond2vscond3 -0.5999902 5.503708e-01
+## trial.typeincongruent:conditioncond2vscond4 -0.5404986 5.904985e-01
+```
+
+
+
+
+
+
+
 
 
 # Distributional analyses
@@ -930,7 +861,7 @@ traj.avg <- mt_aggregate_per_subject(mtdata,
                                         use="tn_trajectories",
                                         use2_variables=c("role.type","trial.type"),
                                         subject_id="personid")
-ta <- select(traj.avg, personid, role.type, trial.type, mt_seq, xpos)
+ta <- dplyr::select(traj.avg, personid, role.type, trial.type, mt_seq, xpos)
 ta$grp <- paste(ta$personid, ta$role.type, ta$trial.type)
 
 ggplot(ta, aes(x=mt_seq, y=xpos, color=role.type, linetype=trial.type, group=grp)) + 
@@ -958,13 +889,13 @@ tw <- traj.wide[,-4]
 
 # separate by trial and role types into different data frames
 tw %>% filter(., role.type=="active", trial.type=="congruent") %>%
-    select(-c(personid, role.type, trial.type)) -> tw.act.congr
+    dplyr::select(-c(personid, role.type, trial.type)) -> tw.act.congr
 tw %>% filter(., role.type=="passive", trial.type=="congruent") %>%
-    select(-c(personid, role.type, trial.type)) -> tw.pass.congr
+    dplyr::select(-c(personid, role.type, trial.type)) -> tw.pass.congr
 tw %>% filter(., role.type=="active", trial.type=="incongruent") %>%
-    select(-c(personid, role.type, trial.type)) -> tw.act.incongr
+    dplyr::select(-c(personid, role.type, trial.type)) -> tw.act.incongr
 tw %>% filter(., role.type=="passive", trial.type=="incongruent") %>%
-    select(-c(personid, role.type, trial.type)) -> tw.pass.incongr
+    dplyr::select(-c(personid, role.type, trial.type)) -> tw.pass.incongr
 
 # run PCA on coordinates   
 pca.act.congr <- prcomp(tw.act.congr, center = TRUE, scale = TRUE)
@@ -1173,139 +1104,8 @@ we opt for the latter option. We estimate the parameters based on a random sampl
 of trials and compute CRQA measures for all trials for all pairs.
 
 
-```r
-par = list(lgM =  20,
-           # percentage of false neighbours excluded when adding one more 
-           # dimension, relative to the first dimension
-           fnnpercent = 10,
-           # the span of radius examined
-           # relative to SD of the distance matrix
-           radiusspan = 80,       
-           # the num of samples of equally spaced radius values to examine
-           radiussample = 20, 
-           normalize = 0, rescale = 1, mindiagline = 2, minvertline = 2,
-           tw = 0, whiteline = FALSE, recpt = FALSE, typeami = "mindip")
-
-# get random trials from a couple
-get.sample.trials <- function(couple.data) {
-    unique.trials <- unique(couple.data$trial)
-    sample.trials <- sample(unique.trials, 20)
-    return(sample.trials)
-}
-
-exp3 %>% select(pair, personid, person, trial, x, y) %>%
-    group_by(pair) %>% filter(., trial %in% get.sample.trials(.)) -> 
-    sampled.data3
-
-exp4 %>% select(pair, personid, person, trial, x, y) %>%
-    filter(!(pair %in% c(2, 7, 10))) %>%
-    group_by(pair) %>% filter(., trial %in% get.sample.trials(.)) -> 
-    sampled.data4
-
-# calculate optimized parameters for sampled trials
-calculate.params <- function(sampled.data) {
-    sampled.params <- data.frame()
-    couples <- as.integer(unique(sampled.data$pair))
-    for (num in couples) {
-        couple.data <- sampled.data[sampled.data$pair==num,]
-        trials <- as.integer(unique(couple.data$trial))
-        for (num2 in trials) {
-            trial.data <- couple.data[couple.data$trial==num2,]
-            p1 <- trial.data[trial.data$person=='p1',]
-            p2 <- trial.data[trial.data$person=='p2',]
-            params <- try(as.data.frame(optimizeParam(p1$x, p2$x, par)), 
-                          silent=TRUE)
-            if ('try-error' %in% class(params)) {
-                next
-            }
-            else if (dim(params)[1] == 0) {
-                next
-            }
-            else {
-                params$pair <- num
-                params$trial <- num2
-                sampled.params <- rbind(sampled.params, params)
-            }
-        }
-    }
-    return(sampled.params)
-}
-
-sampled.params3 <- calculate.params(sampled.data3)
-sampled.params4 <- calculate.params(sampled.data4)
-
-# get RQA measures from all trials
-get.rqa <- function(trial.data, sampled.params) {
-    # take the radius, delay and embedding dimensions to be the median of
-    # all obtained values
-    radius = mean(sampled.params$radius)
-    delay = median(sampled.params$delay)
-    embed = 2 # this most frequently comes out as 2
-
-    rescale =  1; normalize = 0; 
-    minvertline = 2; mindiagline = 2; 
-    whiteline = FALSE; recpt = FALSE; tw = 0
-
-    persons <- unique(trial.data$personid)
-    p1 <- trial.data[trial.data$personid==persons[1],]
-    p2 <- trial.data[trial.data$personid==persons[2],]
-    res <- crqa(p1$x, p2$x, delay, embed, rescale, radius,
-                normalize, minvertline, mindiagline, tw,  
-                whiteline, recpt)
-    metrics <- data.frame(percentRecurrence = res[1], 
-                 percentDeterminism = res[2],
-                 longestLine = res[4],
-                 entropy = res[7])
-    metrics$pair <- trial.data$pair[1]
-    metrics$trial <- trial.data$trial[1]
-    return(metrics)
-}
-
-exp3 %>% group_by(pair, trial) %>% do(get.rqa(., sampled.params3)) ->
-    all.metrics3
-exp4 %>% filter(!(pair %in% c(2, 7, 10))) %>%
-    group_by(pair, trial) %>% do(get.rqa(., sampled.params4)) ->
-    all.metrics4
-```
 
 
-```r
-# test
-all.metrics3 <- ungroup(all.metrics3)
-all.metrics3 %>% 
-    group_by(pair) %>% 
-    summarize_all(funs(mean(., na.rm=TRUE))) %>%
-    select(-trial) ->
-    all.metrics.summary3
-all.metrics.summary3$cond <- as.character(3)
-
-all.metrics4 <- ungroup(all.metrics4)
-all.metrics4 %>% 
-    group_by(pair) %>% 
-    summarize_all(funs(mean(., na.rm=TRUE))) %>%
-    select(-trial) ->
-    all.metrics.summary4
-all.metrics.summary4$cond <- as.character(4)
-
-all.metrics.summary <- rbind(all.metrics.summary3, all.metrics.summary4)
-
-p1 <- ggplot(all.metrics.summary, aes(x=cond, y=RR)) + 
-    geom_bar(stat = "summary", fun.y = "mean") +
-    ggtitle("Recurrence rate in two social conditions")
-p2 <- ggplot(all.metrics.summary, aes(x=cond, y=DET)) + 
-    geom_bar(stat = "summary", fun.y = "mean") +
-    ggtitle("Recurrence rate in two social conditions")
-p3 <- ggplot(all.metrics.summary, aes(x=cond, y=maxL)) + 
-    geom_bar(stat = "summary", fun.y = "mean") +
-    ggtitle("Recurrence rate in two social conditions")
-p4 <- ggplot(all.metrics.summary, aes(x=cond, y=rENTR)) + 
-    geom_bar(stat = "summary", fun.y = "mean") +
-    ggtitle("Recurrence rate in two social conditions")
-
-multiplot(p1, p2, p3, p4, cols=2)
-```
-
-![](SocialSimon_files/figure-html/test_social_rqas-1.png)<!-- -->
 
 Having computed the CRQA metrics, one can visualize the different trials, as
 well as perform statistical analyses on the measures obtained.
