@@ -343,18 +343,28 @@ Now for the social conditions.
 
 ![](SocialSimon_files/figure-html/42_explo_plots-1.png)<!-- -->
 
-From these plots it would seem that neither of the independent variables
-affects the shape of movement trajectory and furthermore that participants go
-straight for their assigned response button instead of producing curved trajectories
-typically found in mouse-tracking studies. 
+From these plots it would seem that in condition 1 only the current trial type affects
+movement trajectory, in condition 2 current and previous trial type affects trajectories
+in passive but not in active trials and in the social conditions 3 and 4 neither
+of the independent variables affects the shape of movement trajectory and furthermore that participants go straight for their assigned response button instead of producing 
+curved trajectories typically found in mouse-tracking studies (similarly, however,
+to active trajectories in condition 2).
 
-However, to check whether this overall pattern holds on the individual level, 
+Instead of plotting both x,y-coordinates, we could focus our attention on just
+the x plane, since it is the one of bigger relevance to the task.
+
+![](SocialSimon_files/figure-html/43_x_plots_12-1.png)<!-- -->![](SocialSimon_files/figure-html/43_x_plots_12-2.png)<!-- -->
+
+![](SocialSimon_files/figure-html/44_x_plots_34-1.png)<!-- -->
+
+It appears that also examining the x plane, the only detectable difference in
+trajectories is the one detectable in condition 1 as influenced by the current
+trial type. For this reason in the remainder of this analysis we focus only on
+the current trial type as an independent variable of interest.
+
+To check whether this overall pattern holds on the individual level, 
 we can also plot average trajectories for individual participants, focusing here 
 on the effect of current trial type, for active and passive data.
-
-
-
-
 
 ![](SocialSimon_files/figure-html/45_avg_person-1.png)<!-- -->![](SocialSimon_files/figure-html/45_avg_person-2.png)<!-- -->![](SocialSimon_files/figure-html/45_avg_person-3.png)<!-- -->![](SocialSimon_files/figure-html/45_avg_person-4.png)<!-- -->
 
@@ -385,7 +395,7 @@ curved-trajectory participants in conditions 2, 3 and 4 as they seem to behave i
 In addition to plotting time-normalized trajectories in full, we can bin them into
 several intervals with the aim of further subjecting the bins to inferential testing.
 
-![](SocialSimon_files/figure-html/48_binned_tnplots-1.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-2.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-3.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-4.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-5.png)<!-- -->
+![](SocialSimon_files/figure-html/48_binned_tnplots-1.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-2.png)<!-- -->![](SocialSimon_files/figure-html/48_binned_tnplots-3.png)<!-- -->
 
 Some analyses, such as looking at movement velocity profiles, require retaining 
 trajectories in raw time. In this case, we decide how many raw time bins to create 
@@ -412,7 +422,11 @@ different movement trajectories also differ in their velocity profiles.
 Here we plot velocity profiles in binned raw time, together with approximate
 time in which cue appeared (mean appearance time being 294 ms).
 
-![](SocialSimon_files/figure-html/51_plot_velocity-1.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-2.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-3.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-4.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-5.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-6.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-7.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-8.png)<!-- -->![](SocialSimon_files/figure-html/51_plot_velocity-9.png)<!-- -->
+![](SocialSimon_files/figure-html/51_plot_velocity1-1.png)<!-- -->
+
+![](SocialSimon_files/figure-html/51_plot_velocity2-1.png)<!-- -->
+
+![](SocialSimon_files/figure-html/51_plot_velocity34-1.png)<!-- -->
 
 
 
@@ -426,9 +440,8 @@ seem to be no consistent differences in condition 2. The social conditions 3 and
 look most like condition 2 with some exceptions.
 
 In this part we will carry out statistical analyses to further probe these observations.
-For simplicity we will focus on the difference between trajectories depending on 
-current trial type only (congruent vs incongruent) and ignore the effect of previous 
-trial for the time being.
+The analysis is carried out separately for 2 types of individual conditions and the
+social conditions.
 
 
 ## Testing trajectories directly
@@ -454,63 +467,52 @@ procedure would be required. However, we can state already that the difference b
 research (where 8 was the minimum) and with condition 1.
 
 
-## Anovas on binned trajectories: TODO
+## Anovas on binned trajectories
 
 Other than looking at particular coordinates, we can also run tests on binned
-trajectories (both normalized and raw time), that we have also plotted above.
-In this case the analysis we perform is repeated measures 3 (bins) by 2 (trial
-type) ANOVA. 
+trajectories (both normalized and raw time but we will only perform the former), 
+that we have also plotted above.
+For conditions 1 and 2 we perform a repeated measures 3 (bins) by 2 (trial
+type) ANOVA. For the social conditions we employ a mixed effects ANOVA with an
+additional between-subjects variable of which condition the data belongs to.
+
+Condition 1:
 
 
-```r
-avg.tn.trajectory.bins <-  
-    mt_aggregate_per_subject(active.straight, 
-                            use="av_tn_trajectories",
-                            use2_variables=c("condition", "trial.type"),
-                            subject_id="personid")
-avg.tn.trajectory.bins$bin <- factor(avg.tn.trajectory.bins$steps)
+                    num Df     den Df         MSE           F         pes         ges   Pr(>F)
+---------------  ---------  ---------  ----------  ----------  ----------  ----------  -------
+trial.type        1.000000   18.00000   0.0007256   140.27823   0.8862762   0.1778884        0
+bin               1.267733   22.81919   0.0142317   267.56206   0.9369664   0.9112076        0
+trial.type:bin    1.942834   34.97101   0.0007351    46.41735   0.7205722   0.1235250        0
 
-aov_ez(data=avg.tn.trajectory.bins,
-       id="personid", dv="xpos", within = c("trial.type", "bin"),
-       between="condition",
-       anova_table = list(es=c("ges", "pes"), correction=c("GG")))
-```
+Condition 2: 
+
+
+                    num Df     den Df         MSE            F         pes         ges      Pr(>F)
+---------------  ---------  ---------  ----------  -----------  ----------  ----------  ----------
+trial.type        1.000000   18.00000   0.0032649     1.402770   0.0722974   0.0019096   0.2516644
+bin               1.189428   21.40969   0.0370187   169.689498   0.9040969   0.7573580   0.0000000
+trial.type:bin    1.158038   20.84469   0.0025087     1.060174   0.0556225   0.0012850   0.3264773
+
+Social conditions:
+
+
+                              num Df     den Df         MSE              F         pes         ges      Pr(>F)
+-------------------------  ---------  ---------  ----------  -------------  ----------  ----------  ----------
+condition                   1.000000   32.00000   0.0179144      0.0352864   0.0011015   0.0007595   0.8521829
+trial.type                  1.000000   32.00000   0.0000951      0.4613318   0.0142117   0.0000528   0.5018858
+condition:trial.type        1.000000   32.00000   0.0000951      2.2421383   0.0654789   0.0002564   0.1440950
+bin                         1.906838   61.01881   0.0041256   1520.1102281   0.9793829   0.9349787   0.0000000
+condition:bin               1.906838   61.01881   0.0041256      1.8053652   0.0534047   0.0167912   0.1746368
+trial.type:bin              1.960349   62.73118   0.0000573      0.7298312   0.0222987   0.0000985   0.4834620
+condition:trial.type:bin    1.960349   62.73118   0.0000573      0.1788361   0.0055576   0.0000241   0.8325036
 
 The result tells us that there is an obvious significant difference in x positions
-in different time bins (expected given the nature of the task). However, there
-is not significant difference by trial type.
+in different time bins for all conditions (expected given the nature of the task). 
+However, only in condition 1 there is a significant main effect of trial type and
+a significant interaction between bin and trial type.
 
 
-```r
-avg.slow.trajectory.bins <- mt_aggregate_per_subject(slow.activedata,
-                                                     use="av_trajectories",
-                                                     use2_variables="trial.type",
-                                                     subject_id="personid")
-avg.slow.trajectory.bins$bin <- factor(avg.slow.trajectory.bins$timestamps)
-
-avg.fast.trajectory.bins <- mt_aggregate_per_subject(fast.activedata,
-                                                     use="av_trajectories",
-                                                     use2_variables="trial.type",
-                                                     subject_id="personid")
-avg.fast.trajectory.bins$bin <- factor(avg.fast.trajectory.bins$timestamps)
-
-# check that each subject has observations in each category
-# table(table(avg.slow.trajectory.bins$personid))
-# table(table(avg.fast.trajectory.bins$personid))
-
-aov_ez(data=avg.slow.trajectory.bins, id="personid", dv="xpos", 
-       within = c("trial.type","bin"),
-       anova_table = list(es=c("ges","pes"), correction=c("GG")))
-
-aov_ez(data=avg.fast.trajectory.bins, id="personid", dv="xpos", 
-       within = c("trial.type","bin"),
-       anova_table = list(es=c("ges","pes"), correction=c("GG")))
-# TODO: also velocity
-# also on eulidean distance
-```
-
-Similarly in raw binned data we find no evidence for significant effect of trial
-type.
 
 
 ## Anovas on dependent measures
@@ -532,70 +534,8 @@ between-subject (condition) and 1 within-subject variables (trial type).
 ### Reaction time
 
 
-```r
-by(all.measures.active$RT, list(all.measures.active$trial.type,
-                                 all.measures.active$condition), stat.desc, basic=FALSE)
-```
 
-```
-## : congruent
-## : 1
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  749.2205597  747.1539672   18.1129065   38.0538045 6233.4702747 
-##      std.dev     coef.var 
-##   78.9523291    0.1056708 
-## -------------------------------------------------------- 
-## : incongruent
-## : 1
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 8.121267e+02 8.109753e+02 1.629599e+01 3.423661e+01 5.045627e+03 
-##      std.dev     coef.var 
-## 7.103258e+01 8.758908e-02 
-## -------------------------------------------------------- 
-## : congruent
-## : 2
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 6.915412e+02 7.363984e+02 4.931343e+01 1.036037e+02 4.620448e+04 
-##      std.dev     coef.var 
-## 2.149523e+02 2.918967e-01 
-## -------------------------------------------------------- 
-## : incongruent
-## : 2
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 6.867904e+02 7.443394e+02 5.303003e+01 1.114120e+02 5.343149e+04 
-##      std.dev     coef.var 
-## 2.311525e+02 3.105472e-01 
-## -------------------------------------------------------- 
-## : congruent
-## : 3
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 7.080067e+02 7.468482e+02 2.707784e+01 5.631145e+01 1.613061e+04 
-##      std.dev     coef.var 
-## 1.270063e+02 1.700564e-01 
-## -------------------------------------------------------- 
-## : incongruent
-## : 3
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 7.135585e+02 7.568695e+02 2.990607e+01 6.219309e+01 1.967621e+04 
-##      std.dev     coef.var 
-## 1.402719e+02 1.853317e-01 
-## -------------------------------------------------------- 
-## : congruent
-## : 4
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 7.074354e+02 7.563644e+02 3.380711e+01 7.166787e+01 1.942965e+04 
-##      std.dev     coef.var 
-## 1.393903e+02 1.842899e-01 
-## -------------------------------------------------------- 
-## : incongruent
-## : 4
-##       median         mean      SE.mean CI.mean.0.95          var 
-## 7.259981e+02 7.564996e+02 3.126759e+01 6.628432e+01 1.662025e+04 
-##      std.dev     coef.var 
-## 1.289196e+02 1.704159e-01
-```
-
-![](SocialSimon_files/figure-html/58_anova_measures_plots_rt-1.png)<!-- -->![](SocialSimon_files/figure-html/58_anova_measures_plots_rt-2.png)<!-- -->
+![](SocialSimon_files/figure-html/58_anova_measures_plots_rt-1.png)<!-- -->
 
 
 ```
@@ -642,70 +582,8 @@ by(all.measures.active$RT, list(all.measures.active$trial.type,
 ### Area under curve
 
 
-```r
-by(all.measures.active$AUC, list(all.measures.active$trial.type,
-                                 all.measures.active$condition), stat.desc, basic=FALSE)
-```
 
-```
-## : congruent
-## : 1
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  0.353700830  0.347098780  0.016180164  0.033993262  0.004974156 
-##      std.dev     coef.var 
-##  0.070527698  0.203192009 
-## -------------------------------------------------------- 
-## : incongruent
-## : 1
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  0.438618889  0.423144547  0.010478345  0.022014187  0.002086119 
-##      std.dev     coef.var 
-##  0.045674048  0.107939588 
-## -------------------------------------------------------- 
-## : congruent
-## : 2
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  0.025300785  0.068998206  0.022792604  0.047885484  0.009870553 
-##      std.dev     coef.var 
-##  0.099350657  1.439902024 
-## -------------------------------------------------------- 
-## : incongruent
-## : 2
-##       median         mean      SE.mean CI.mean.0.95          var 
-##   0.02736986   0.07979365   0.02674971   0.05619906   0.01359540 
-##      std.dev     coef.var 
-##   0.11659930   1.46126028 
-## -------------------------------------------------------- 
-## : congruent
-## : 3
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  0.002014931  0.036793009  0.026512992  0.055136785  0.015464652 
-##      std.dev     coef.var 
-##  0.124356954  3.379907195 
-## -------------------------------------------------------- 
-## : incongruent
-## : 3
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  0.002656911  0.041002347  0.028998952  0.060306622  0.018500662 
-##      std.dev     coef.var 
-##  0.136017140  3.317301361 
-## -------------------------------------------------------- 
-## : congruent
-## : 4
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  -0.02155870   0.02673083   0.03474220   0.07365018   0.02051935 
-##      std.dev     coef.var 
-##   0.14324577   5.35882277 
-## -------------------------------------------------------- 
-## : incongruent
-## : 4
-##       median         mean      SE.mean CI.mean.0.95          var 
-##  -0.02223459   0.03120178   0.03550553   0.07526837   0.02143093 
-##      std.dev     coef.var 
-##   0.14639306   4.69181694
-```
-
-![](SocialSimon_files/figure-html/58_anova_measures_plots-1.png)<!-- -->![](SocialSimon_files/figure-html/58_anova_measures_plots-2.png)<!-- -->
+![](SocialSimon_files/figure-html/59_anova_measures_plots_auc-1.png)<!-- -->
 
 
 ```
@@ -749,7 +627,6 @@ by(all.measures.active$AUC, list(all.measures.active$trial.type,
 
 
 
-
 # Distributional analyses
 
 Sometimes, averaging trajectories produces artifical results. For example, a smooth
@@ -763,84 +640,26 @@ Another method includes mapping data to "trajectory prototypes".
 
 ## Bimodality analysis
 
-This analysis checks if any of the spatial measures are bimodally distributed.
+This analysis checks if AUC measure is bimodally distributed.
 
+![](SocialSimon_files/figure-html/62_bimodality-1.png)<!-- -->![](SocialSimon_files/figure-html/62_bimodality-2.png)<!-- -->
 
-```r
-# standardize measures per participant
-activedata <- mt_standardize(activedata, use_variables = c("MAD", "AUC", "AD"), 
-                             within = "personid", prefix = "z_")
-
-# merge trial level data (needed for distribution qplot with facets)
-mt.merged <- merge(activedata$data, activedata$measures, by="mt_id")
-
-# plot distributions
-qplot(x=z_MAD, data=mt.merged, bins=50) + facet_grid(trial.type ~ .)
-```
-
-![](SocialSimon_files/figure-html/bimodality-1.png)<!-- -->
-
-```r
-qplot(x=z_AUC, data=mt.merged, bins=50) + facet_grid(trial.type ~ .)
-```
-
-![](SocialSimon_files/figure-html/bimodality-2.png)<!-- -->
-
-```r
-qplot(x=z_AD, data=mt.merged, bins=50) + facet_grid(trial.type ~ .)
-```
-
-![](SocialSimon_files/figure-html/bimodality-3.png)<!-- -->
-
-```r
-# calculate bimodality coefficient
-bm.check <- mt_check_bimodality(activedata, 
-                                use_variables = c("z_MAD", "z_AUC", "z_AD"), 
-                                grouping_variables = "trial.type", methods = "BC")
-bm.check
-```
-
-```
-## $BC
-##    trial.type     z_MAD     z_AUC      z_AD
-## 1   congruent 0.2600469 0.2264174 0.1967166
-## 2 incongruent 0.2598736 0.2337273 0.2051982
-```
-
-A distribution is considered bimodal if BC > 0.555. In our case both distribution
-plots and bimodality coefficient give no reason to suspect bimodal data that could
-blur our results.
+A distribution is considered bimodal if BC > 0.555. In our case neither distribution
+plots nor bimodality coefficients (which are below 0.555 for all conditions) give 
+any reason to suspect bimodal data that could blur our results.
 
 
 ## Trajectory prototypes
 
 Mousetrap package provides a possibility for mapping collected trajectories
 to a number of trajectory prototypes frequently encountered in mouse tracking
-experiments.
+experiments. We apply this to the social conditions.
 
-
-```r
-activedata <- mt_spatialize(activedata, n_points=50)
-
-proto <- mt_remap_symmetric(mt_prototypes, remap_xpos = "right")
-mt_plot(proto, facet_col="mt_id") +
-    facet_grid(.~factor(mt_id,levels=unique(mt_id))) +
-    ggtitle("Trajectory prototypes")
-```
-
-![](SocialSimon_files/figure-html/prototypes-1.png)<!-- -->
-
-```r
-activedata <- mt_map(activedata, use="sp_trajectories", prototypes = proto)
-mt_plot(activedata, use="sp_trajectories", 
-        use2="prototyping",
-        facet_col="prototype_label")
-```
-
-![](SocialSimon_files/figure-html/prototypes-2.png)<!-- -->
+![](SocialSimon_files/figure-html/63_prototypes-1.png)<!-- -->![](SocialSimon_files/figure-html/63_prototypes-2.png)<!-- -->
 
 Even in the presence of some variability of trajectories, it seems that their
 vast majority is straight.
+
 
 # Trajectory dissection with PCA
 
@@ -855,101 +674,20 @@ weights.
 To conduct PCA we use time-normalized trajectories averaged within each participant.
 We will focus on components underlying x coordinates.
 
+![](SocialSimon_files/figure-html/64_pca_preplot-1.png)<!-- -->
 
-```r
-traj.avg <- mt_aggregate_per_subject(mtdata, 
-                                        use="tn_trajectories",
-                                        use2_variables=c("role.type","trial.type"),
-                                        subject_id="personid")
-ta <- dplyr::select(traj.avg, personid, role.type, trial.type, mt_seq, xpos)
-ta$grp <- paste(ta$personid, ta$role.type, ta$trial.type)
 
-ggplot(ta, aes(x=mt_seq, y=xpos, color=role.type, linetype=trial.type, group=grp)) + 
-    geom_path() + ggtitle("Average trajectories of all participants")
-```
 
-![](SocialSimon_files/figure-html/pca-1.png)<!-- -->
+![](SocialSimon_files/figure-html/66_plot_pca-1.png)<!-- -->![](SocialSimon_files/figure-html/66_plot_pca-2.png)<!-- -->![](SocialSimon_files/figure-html/66_plot_pca-3.png)<!-- -->![](SocialSimon_files/figure-html/66_plot_pca-4.png)<!-- -->
 
-```r
-mt_plot_aggregate(mtdata, use = "tn_trajectories", 
-                  x = "steps", y = "xpos", 
-                  color = "trial.type", linetype="role.type",
-                  subject_id = "personid") +
-    theme(legend.position=c(.75,.25), legend.box='horizontal') + 
-    ggtitle("Average trajectories combined by role and trial type")
-```
+Given the resulting plots, we can see that in condition 1 the component that
+distinguishes between trial types is the third one. In condition 2, the second
+component has reverse shape in active and passive trials, while third seems to
+distinguish trial types. In condition 3, only component 3 is markedly different
+in incongruent active trials. In condition 4, component 2 has reverse shape in
+active and passive trials, while component 3 is different mostly in passive congruent
+trials.
 
-![](SocialSimon_files/figure-html/pca-2.png)<!-- -->
-
-```r
-# transpose into wide format
-traj.wide <- dcast(ta, formula=personid + role.type + trial.type ~ mt_seq, 
-                   value.var="xpos")
-tw <- traj.wide[,-4]
-
-# separate by trial and role types into different data frames
-tw %>% filter(., role.type=="active", trial.type=="congruent") %>%
-    dplyr::select(-c(personid, role.type, trial.type)) -> tw.act.congr
-tw %>% filter(., role.type=="passive", trial.type=="congruent") %>%
-    dplyr::select(-c(personid, role.type, trial.type)) -> tw.pass.congr
-tw %>% filter(., role.type=="active", trial.type=="incongruent") %>%
-    dplyr::select(-c(personid, role.type, trial.type)) -> tw.act.incongr
-tw %>% filter(., role.type=="passive", trial.type=="incongruent") %>%
-    dplyr::select(-c(personid, role.type, trial.type)) -> tw.pass.incongr
-
-# run PCA on coordinates   
-pca.act.congr <- prcomp(tw.act.congr, center = TRUE, scale = TRUE)
-pca.pass.congr <- prcomp(tw.pass.congr, center = TRUE, scale = TRUE)
-pca.act.incongr <- prcomp(tw.act.incongr, center = TRUE, scale = TRUE)
-pca.pass.incongr <- prcomp(tw.pass.incongr, center = TRUE, scale = TRUE)
-
-var.explained <- function(sdev) {
-    pr_var <- sdev^2
-    prop_varex <- pr_var[1:3]/sum(pr_var) * 100
-    return(prop_varex)
-}
-
-explained <- matrix(nrow=4, ncol=3)
-explained[1,] <- var.explained(pca.act.congr$sdev)
-explained[2,] <- var.explained(pca.pass.congr$sdev)
-explained[3,] <- var.explained(pca.act.incongr$sdev)
-explained[4,] <- var.explained(pca.pass.incongr$sdev)
-explained <- as.data.frame(explained)
-explained$grp <- c('act.congr', 'pass.congr', 'act.incongr', 'pass.incongr')
-
-# select top 3 components from each type of trial
-components <- data.frame("comp1.act.congr" = pca.act.congr$rotation[,1],
-                         "comp2.act.congr" = pca.act.congr$rotation[,2],
-                         "comp3.act.congr" = pca.act.congr$rotation[,3],
-                         "comp1.pass.congr" = pca.pass.congr$rotation[,1],
-                         "comp2.pass.congr" = pca.pass.congr$rotation[,2],
-                         "comp3.pass.congr" = pca.pass.congr$rotation[,3],
-                         "comp1.act.incongr" = pca.act.incongr$rotation[,1],
-                         "comp2.act.incongr" = pca.act.incongr$rotation[,2],
-                         "comp3.act.incongr" = pca.act.incongr$rotation[,3],
-                         "comp1.pass.incongr" = pca.pass.incongr$rotation[,1],
-                         "comp2.pass.incongr" = pca.pass.incongr$rotation[,2],
-                         "comp3.pass.incongr" = pca.pass.incongr$rotation[,3])
-
-components.long <- melt(components)
-components.long$steps <- rep(c(1:100), 12)
-components.long <- separate(components.long, variable, 
-                            into = c("component", "role", "condition"))
-ggplot(components.long, aes(x=steps, y=value, color=component)) + 
-    geom_path() + facet_grid(role~condition) + 
-    ggtitle("Top 3 principal components by trial and role type")
-```
-
-![](SocialSimon_files/figure-html/pca-3.png)<!-- -->
-
-Given the resulting plots, we could surmise that the first component, which explains
-about 69% of variance in active trials and 
-75% in passive trials, reflects the constant tendency to move in a certain direction. The second component, which explains about 
-20% in all types of trials decreases in congruent 
-active trials while it increases in all other types. Finally, the third
-component that explains 9% in active and 
-2% in passive trials has also different shape between these
-two types of trials.
 
 ## Beta weights
 
@@ -994,88 +732,64 @@ a measure of predictability of trajectory given a number of surrounding coordina
 We have seen above that a measure of x-flips did not deliver statistically significant
 results. Here we calculate sample entropy, using default settings.
 
+### Condition 1
 
-```r
-# first for active data
-# calculate sample entropy for lag 3
-activedata <- mt_sample_entropy(activedata, use="tn_trajectories", m=3, 
-                                dimension="xpos")
-# aggregate per participant
-agg.entropy.active <- mt_aggregate_per_subject(activedata, subject_id = "personid",
-                                        use_variables = "sample_entropy", 
-                                        use2_variables = "trial.type")
-# test the difference
-mt_aggregate(activedata, subject_id = "personid",
-             use_variables = "sample_entropy", use2_variables = "trial.type")
-```
-
-```
-##    trial.type sample_entropy
-## 1   congruent     0.09608580
-## 2 incongruent     0.09717253
-```
-
-```r
-t.test(sample_entropy~trial.type, data=agg.entropy.active, paired=TRUE)
-```
 
 ```
 ## 
 ## 	Paired t-test
 ## 
 ## data:  sample_entropy by trial.type
-## t = -1.1591, df = 38, p-value = 0.2536
+## t = -9.0891, df = 18, p-value = 3.802e-08
 ## alternative hypothesis: true difference in means is not equal to 0
 ## 95 percent confidence interval:
-##  -0.0029847149  0.0008112553
+##  -0.03273935 -0.02044578
 ## sample estimates:
 ## mean of the differences 
-##             -0.00108673
+##             -0.02659257
 ```
+In condition 1 we see a highly significant difference in sample entropy between
+congruent and incongruent trials, indicating that participants' movement in incongruent
+trials was more erratic.
 
-```r
-# for passive data
-# calculate sample entropy for lag 3
-passivedata <- mt_sample_entropy(passivedata, use="tn_trajectories", m=3, 
-                                dimension="xpos")
-# aggregate per participant
-agg.entropy.passive <- mt_aggregate_per_subject(passivedata, subject_id = "personid",
-                                        use_variables = "sample_entropy", 
-                                        use2_variables = "trial.type")
-# test the difference
-mt_aggregate(passivedata, subject_id = "personid",
-             use_variables = "sample_entropy", use2_variables = "trial.type")
-```
+### Condition 2
 
-```
-##    trial.type sample_entropy
-## 1   congruent     0.08248634
-## 2 incongruent     0.08433156
-```
 
-```r
-t.test(sample_entropy~trial.type, data=agg.entropy.passive, paired=TRUE)
-```
+                        num Df   den Df         MSE          F         pes         ges      Pr(>F)
+---------------------  -------  -------  ----------  ---------  ----------  ----------  ----------
+trial.type                   1       16   0.0000157   2.367721   0.1289066   0.0005076   0.1434087
+role.type                    1       16   0.0021265   1.448251   0.0830027   0.0403382   0.2463130
+trial.type:role.type         1       16   0.0000328   1.239965   0.0719239   0.0005544   0.2819273
 
-```
-## 
-## 	Paired t-test
-## 
-## data:  sample_entropy by trial.type
-## t = -1.7216, df = 35, p-value = 0.09398
-## alternative hypothesis: true difference in means is not equal to 0
-## 95 percent confidence interval:
-##  -0.004021170  0.000330721
-## sample estimates:
-## mean of the differences 
-##            -0.001845224
-```
+In condition 2, there seems to be no effect on movement entropy by either role or
+trial type.
 
-```r
-# TODO: entropy along y axis, angles?
-```
-It would seem that there is no difference in complexity of x coordinates
-between different trial types in either active or passive data.
+### Social conditions
+
+
+                                  num Df   den Df         MSE            F         pes         ges      Pr(>F)
+-------------------------------  -------  -------  ----------  -----------  ----------  ----------  ----------
+condition                              1       34   0.0020999    0.2504563   0.0073125   0.0058144   0.6199781
+trial.type                             1       34   0.0000194    5.1027745   0.1304965   0.0010995   0.0304140
+condition:trial.type                   1       34   0.0000194    0.3763487   0.0109479   0.0000812   0.5436465
+role.type                              1       34   0.0005085   14.5326300   0.2994404   0.0759381   0.0005528
+condition:role.type                    1       34   0.0005085    0.3213664   0.0093634   0.0018140   0.5745114
+trial.type:role.type                   1       34   0.0000171    0.0000104   0.0000003   0.0000000   0.9974515
+condition:trial.type:role.type         1       34   0.0000171    0.0880423   0.0025828   0.0000167   0.7684860
+
+In the social conditions it seems that both role and trial type have an significant 
+effect on movement complexity.
+
+We can observe all these results on the following combined plots.
+
+![](SocialSimon_files/figure-html/70_plot_entropy-1.png)<!-- -->![](SocialSimon_files/figure-html/70_plot_entropy-2.png)<!-- -->
+
+It appears that movement complexity is the highest in the condition in which participants
+had to carry out the whole task by themselves and lowest in the individual go-nogo
+condition (in active trials). There does not seem to be a difference depending on whether participants see each other's cursors (conditions 3 and 4). 
+In addition, in the social conditions incongruent trials have
+led to higher movement complexity, movement in active trials was more complex than
+in passive trials but there was no interaction between these factors.
 
 
 ## Coupling
@@ -1105,8 +819,6 @@ of trials and compute CRQA measures for all trials for all pairs.
 
 
 
-
-
 Having computed the CRQA metrics, one can visualize the different trials, as
 well as perform statistical analyses on the measures obtained.
 
@@ -1128,11 +840,32 @@ Just to get a feel for these measures we can first examine the example trials in
 which coupling (as indexed by RR and determinism) has been estimated to be low 
 and high.
 
-
+![](SocialSimon_files/figure-html/72_rqa_plots-1.png)<!-- -->
 
 Subsequently we can see if coupling is higher within couples than across and whether
-it is affected by the presence of visual information (TODO: compare to coupling
-in condition 4).
+it is affected by the presence of visual information.
+
+Starting with the latter, the question is whether coupling among couples in 
+condition 3 differs from coupling among couples in condition 4.
+
+![](SocialSimon_files/figure-html/73_test_social_rqas-1.png)<!-- -->
+
+```
+## 
+## 	Welch Two Sample t-test
+## 
+## data:  RR by condition
+## t = -1.2325, df = 12.056, p-value = 0.2413
+## alternative hypothesis: true difference in means is not equal to 0
+## 95 percent confidence interval:
+##  -3.1740196  0.8797203
+## sample estimates:
+## mean in group 3 mean in group 4 
+##        8.497376        9.644526
+```
+
+From the plots it appears that only recurrence rate seems higher in condition 4
+but the difference is not significant.
 
 Judging whether coupling within couples is indeed present typically implies a 
 comparison between coupling calculated for real couples and coupling calculated
@@ -1144,13 +877,35 @@ coupling between people who perform the task together, it should be higher betwe
 people who actually performed it together than between people who merely performed
 the same task.
 
+Given no difference between conditions 3 and 4 we will focus here only on data
+from condition 4 and for simplicity examine only the recurrence rate measure.
 
 
-From the plot as well as t-test it seems that real couples do not show higher
-level of coupling than fake pairs. This, together with a lack of social Simon
+```
+##    comparison.group p.value
+## 1             fake0 0.45821
+## 2             fake1 0.90668
+## 3             fake2 0.96468
+## 4             fake3 0.46011
+## 5             fake4 0.96139
+## 6             fake5 0.84992
+## 7             fake6 0.96506
+## 8             fake7 0.79204
+## 9             fake8 0.18629
+## 10            fake9 0.68983
+```
+
+![](SocialSimon_files/figure-html/74_rqa_test-1.png)<!-- -->
+
+From the plot as well as a t-test it seems that real couples do not show higher
+level of coupling than fake pairs. 
+
+
+This, together with a lack of social Simon
 effect in the standard trajectory measures, as well as trajectories showing spatial
 division of labor, suggests that people performed the task individually, rather 
 than approaching it as a social, joint activity.
+
 
 ## Fractal analysis
 
