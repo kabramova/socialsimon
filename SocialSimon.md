@@ -41,6 +41,8 @@ stim.boundary <- 820 # the y-coord that needed to be crossed for stimulus to app
 
 
 
+## Load data
+
 We then begin by loading the data and reformatting it for easier processing.
 
 
@@ -81,6 +83,8 @@ deadlines and a correct response was given.
 
 
 
+## Extract relevant trajectory
+
 Complete trajectories will be needed for the dynamical part of our analysis at 
 the end of this script. For remaining analyses we need to extract
 the portions of the trajectories after participants have clicked on the start
@@ -92,6 +96,8 @@ button.
 
 ![](SocialSimon_files/figure-html/12_plot_extracted-1.png)<!-- -->
 
+## Rescale space
+
 For convenience we rescale the coordinates into a standard MouseTracker 
 coordinate space, where x is in range [-1, 1] and y in range [0, 1.5].
 
@@ -100,6 +106,8 @@ coordinate space, where x is in range [-1, 1] and y in range [0, 1.5].
 
 
 ![](SocialSimon_files/figure-html/15_plot_rescaled-1.png)<!-- -->
+
+## Align to common origin
 
 Now we align all the trajectories to the common [0, 0] origin and timestamps
 to start at 0.
@@ -144,6 +152,8 @@ In condition 4 (without visual feedback) it is rather than certain individuals
 adopt the "move upward" strategy, independently of their partner (which is to be
 expected since they do not see the partner's movements).
 
+## Flip trajectories
+
 As the next pre-processing step we will flip all trajectories to one side.
 This ensures that every trajectory starts at the bottom of the coordinate system 
 and ends in the top right corner. It is done to obtain comparable trajectory 
@@ -152,6 +162,8 @@ measures.
 
 
 
+
+## Remove outliers
 
 As a last step, a look at sampling rate distribution to see whether it reveals 
 any outliers that could indicate missing data or wrong recording.
@@ -205,6 +217,9 @@ into a single data frame.
 
 
 
+
+## Transform into mousetrap object
+
 For the analysis we will use a mousetrap package. Accordingly, the next step is 
 to transform the data into a mousetrap object.
 
@@ -252,7 +267,7 @@ and therefore need to be removed from further analysis.
 
 
 
-As a result of data cleaning, 13%, 3%, 
+As a result of data cleaning, 13%, 12%, 
 4%, 27% of trials in conditions 1 to 4 are removed.
 
 # Dependent variables calculation
@@ -325,6 +340,8 @@ active and passive data.
 
 # Exploratory Analysis
 
+## Group-level plots
+
 First we will visually examine trajectories averaged across trials
 for each participant and across participants. They are averaged separately
 for each independent variable of interest, which would allow us to reveal
@@ -362,6 +379,8 @@ trajectories is the one detectable in condition 1 as influenced by the current
 trial type. For this reason in the remainder of this analysis we focus only on
 the current trial type as an independent variable of interest.
 
+## Individual-level plots
+
 To check whether this overall pattern holds on the individual level, 
 we can also plot average trajectories for individual participants, focusing here 
 on the effect of current trial type, for active and passive data.
@@ -387,8 +406,28 @@ the majority of trajectories goes beyond that last threshold.
 
 ![](SocialSimon_files/figure-html/46_passive_hist-1.png)<!-- -->
 
+
+## Trajectory prototypes
+
+In order to examine the qualitative difference between individual trajectories in a more unbiased manner, we can automatically assign participants to straight vs curved motion strategy based on the shape of the majority of their
+trajectories. Mousetrap package provides a possibility for mapping collected trajectories
+to a number of trajectory prototypes frequently encountered in mouse tracking
+experiments, such as these:
+
+![](SocialSimon_files/figure-html/63_prototypes-1.png)<!-- -->
+
+We can map trajectories collected in our experiment to the prototypes and plot them.
+
+![](SocialSimon_files/figure-html/63_prototypes_own-1.png)<!-- -->![](SocialSimon_files/figure-html/63_prototypes_own-2.png)<!-- -->
+
+We can also plot the distribution of trajectories for all the participants, focusing here on the two main types, "straight" and "curved"+"cCoM" prototypes.
+
+![](SocialSimon_files/figure-html/63_prototypes_hist-1.png)<!-- -->![](SocialSimon_files/figure-html/63_prototypes_hist-2.png)<!-- -->
+
+
 For the following plots we will separate straight-trajectory participants from the
-curved-trajectory participants in conditions 2, 3 and 4 as they seem to behave in a qualitatively different manner.
+curved-trajectory participants in conditions 2, 3 and 4 as they seem to behave in a qualitatively different manner. We use the prototype information
+to decide which participants belong to which group, i.e. if the majority of a given person's trajectories are straight, they are assigned to the straight group and analogously for the curved trajectories.
 
 
 
@@ -581,6 +620,23 @@ between-subject (condition) and 1 within-subject variables (trial type).
 
 ### Area under curve
 
+#### Bimodality analysis
+
+Sometimes, averaging trajectories produces artifical results. For example, a smooth
+average trajectory for a given participant could be a result of a large number
+of straight trajectories that go directly to the target and discrete error type
+of trajectories where participant first moves directly to the wrong side and then
+abruptly changes direction (as one of the members of couple 7).
+
+The main method to eliminate this possibility relies on bimodality analysis, which checks whether spatial measures are bimodally distributed.
+
+![](SocialSimon_files/figure-html/62_bimodality-1.png)<!-- -->![](SocialSimon_files/figure-html/62_bimodality-2.png)<!-- -->
+
+A distribution is considered bimodal if BC > 0.555. In our case neither distribution
+plots nor bimodality coefficients (which are below 0.555 for all conditions) give 
+any reason to suspect bimodal data that could blur our results.
+
+
 
 
 ![](SocialSimon_files/figure-html/59_anova_measures_plots_auc-1.png)<!-- -->
@@ -626,42 +682,138 @@ between-subject (condition) and 1 within-subject variables (trial type).
 
 
 
+## Individual-level analyses
 
-# Distributional analyses
-
-Sometimes, averaging trajectories produces artifical results. For example, a smooth
-average trajectory for a given participant could be a result of a large number
-of straight trajectories that go directly to the target and discrete error type
-of trajectories where participant first moves directly to the wrong side and then
-abruptly changes direction (as one of the members of couple 7).
-
-The main method to eliminate this possibility relies on bimodality analysis.
-Another method includes mapping data to "trajectory prototypes".
-
-## Bimodality analysis
-
-This analysis checks if AUC measure is bimodally distributed.
-
-![](SocialSimon_files/figure-html/62_bimodality-1.png)<!-- -->![](SocialSimon_files/figure-html/62_bimodality-2.png)<!-- -->
-
-A distribution is considered bimodal if BC > 0.555. In our case neither distribution
-plots nor bimodality coefficients (which are below 0.555 for all conditions) give 
-any reason to suspect bimodal data that could blur our results.
+Since we have seen that participants tend to employ two qualitatively different
+movement patterns, a question we can ask is whether two groups also lead to qualitatively different statistical results. To that end we run t-tests on the individual level. Our prediction is that curved participants but not straight participants show significantly higher RT and AUC in incongruent trials compared to congruent trials.
 
 
-## Trajectory prototypes
+personid   prototype   measure   t         df    p         lower.conf   upper.conf   estimate   effect 
+---------  ----------  --------  --------  ----  --------  -----------  -----------  ---------  -------
+c2p1       curved      RT        1.395     155   0.91748   -Inf         43.872       20.067     0.111  
+c2p1       curved      AUC       0.477     155   0.68295   -Inf         0.022        0.005      0.038  
+c2p13      curved      RT        -1.944    151   0.02685   -Inf         -10.602      -71.224    0.156  
+c2p13      curved      AUC       -23.739   151   0         -Inf         -0.185       -0.199     0.888  
+c2p19      curved      RT        -2.647    157   0.00447   -Inf         -21.485      -57.306    0.207  
+c2p19      curved      AUC       -4.309    157   1e-05     -Inf         -0.014       -0.023     0.325  
+c2p2       curved      RT        -2.012    156   0.02298   -Inf         -5.593       -31.501    0.159  
+c2p2       curved      AUC       -1.905    156   0.02933   -Inf         -0.001       -0.01      0.151  
+c2p6       curved      RT        -0.583    156   0.28022   -Inf         13.983       -7.616     0.047  
+c2p6       curved      AUC       -1.447    156   0.07497   -Inf         0.001        -0.008     0.115  
+c2p10      straight    RT        -1.299    158   0.09798   -Inf         6.67         -24.337    0.103  
+c2p10      straight    AUC       -1.659    158   0.04956   -Inf         0            -0.013     0.131  
+c2p12      straight    RT        -0.561    158   0.28778   -Inf         19.719       -10.118    0.045  
+c2p12      straight    AUC       -0.341    158   0.36662   -Inf         0.007        -0.002     0.027  
+c2p14      straight    RT        0.964     156   0.83181   -Inf         32.717       12.046     0.077  
+c2p14      straight    AUC       -0.67     156   0.25192   -Inf         0.007        -0.005     0.054  
+c2p15      straight    RT        1.735     156   0.95762   -Inf         74.399       38.078     0.138  
+c2p15      straight    AUC       -0.171    156   0.4323    -Inf         0.012        -0.001     0.014  
+c2p16      straight    RT        0.05      158   0.51998   -Inf         34.835       1.026      0.004  
+c2p16      straight    AUC       0.081     158   0.53207   -Inf         0.041        0.002      0.006  
+c2p17      straight    RT        -0.947    157   0.17261   -Inf         14.042       -18.781    0.075  
+c2p17      straight    AUC       -0.783    157   0.21741   -Inf         0.009        -0.008     0.062  
+c2p18      straight    RT        0.143     151   0.55667   -Inf         42.324       3.361      0.012  
+c2p18      straight    AUC       2.131     151   0.98263   -Inf         0.044        0.025      0.171  
+c2p20      straight    RT        -1.223    158   0.11149   -Inf         5.998        -17.022    0.097  
+c2p20      straight    AUC       0.4       158   0.6551    -Inf         0.026        0.005      0.032  
+c2p3       straight    RT        0.58      158   0.71872   -Inf         33.437       8.682      0.046  
+c2p3       straight    AUC       1.225     158   0.88876   -Inf         0.02         0.009      0.097  
+c2p4       straight    RT        -0.093    158   0.46287   -Inf         26.292       -1.572     0.007  
+c2p4       straight    AUC       -1.113    158   0.1336    -Inf         0.003        -0.006     0.088  
+c2p5       straight    RT        0.356     156   0.63891   -Inf         39.086       6.924      0.029  
+c2p5       straight    AUC       1.156     156   0.87536   -Inf         0.025        0.01       0.092  
+c2p7       straight    RT        0.606     157   0.72741   -Inf         40.275       10.801     0.048  
+c2p7       straight    AUC       1.956     157   0.97386   -Inf         0.025        0.014      0.154  
+c2p8       straight    RT        0.022     155   0.5086    -Inf         37.869       0.488      0.002  
+c2p8       straight    AUC       -0.055    155   0.47811   -Inf         0.009        0          0.004  
+c2p9       straight    RT        -0.835    156   0.20263   -Inf         13.54        -13.777    0.067  
+c2p9       straight    AUC       0.301     156   0.61797   -Inf         0.019        0.003      0.024  
 
-Mousetrap package provides a possibility for mapping collected trajectories
-to a number of trajectory prototypes frequently encountered in mouse tracking
-experiments. We apply this to the social conditions.
-
-![](SocialSimon_files/figure-html/63_prototypes-1.png)<!-- -->![](SocialSimon_files/figure-html/63_prototypes-2.png)<!-- -->
-
-Even in the presence of some variability of trajectories, it seems that their
-vast majority is straight.
 
 
-# Trajectory dissection with PCA
+personid   prototype   measure   t        df    p         lower.conf   upper.conf   estimate   effect 
+---------  ----------  --------  -------  ----  --------  -----------  -----------  ---------  -------
+c3p13      curved      RT        -5.88    143   0         -Inf         -90.836      -126.433   0.441  
+c3p13      curved      AUC       -2.022   143   0.02252   -Inf         -0.01        -0.053     0.167  
+c3p14      curved      RT        -0.773   146   0.2203    -Inf         20.242       -17.746    0.064  
+c3p14      curved      AUC       -2.179   146   0.01546   -Inf         -0.007       -0.027     0.177  
+c3p7       curved      RT        -1.856   153   0.03272   -Inf         -3.618       -33.455    0.148  
+c3p7       curved      AUC       -1.447   153   0.07503   -Inf         0.002        -0.012     0.116  
+c4p1       curved      RT        1.041    147   0.85028   -Inf         46.406       17.92      0.086  
+c4p1       curved      AUC       -0.381   147   0.35195   -Inf         0.011        -0.003     0.031  
+c4p9       curved      RT        0.046    154   0.51825   -Inf         39.039       1.052      0.004  
+c4p9       curved      AUC       -1.531   154   0.06389   -Inf         0.002        -0.026     0.122  
+c3p1       straight    RT        -0.499   146   0.30924   -Inf         21.07        -9.095     0.041  
+c3p1       straight    AUC       -0.781   146   0.21813   -Inf         0.01         -0.009     0.064  
+c3p10      straight    RT        -0.422   154   0.33673   -Inf         30.704       -10.518    0.034  
+c3p10      straight    AUC       1.329    154   0.90711   -Inf         0.018        0.008      0.106  
+c3p11      straight    RT        -0.285   152   0.38812   -Inf         19.83        -4.12      0.023  
+c3p11      straight    AUC       0.75     152   0.77283   -Inf         0.014        0.004      0.061  
+c3p12      straight    RT        -1.882   156   0.03083   -Inf         -3.85        -31.847    0.149  
+c3p12      straight    AUC       -0.056   156   0.4776    -Inf         0.013        0          0.005  
+c3p15      straight    RT        0.672    150   0.74857   -Inf         46.125       13.314     0.055  
+c3p15      straight    AUC       -0.569   150   0.28523   -Inf         0.01         -0.005     0.046  
+c3p16      straight    RT        0.17     146   0.56729   -Inf         27.089       2.52       0.014  
+c3p16      straight    AUC       2.03     146   0.97792   -Inf         0.041        0.023      0.166  
+c3p17      straight    RT        -0.239   151   0.40558   -Inf         25.801       -4.362     0.019  
+c3p17      straight    AUC       0.167    151   0.5661    -Inf         0.027        0.003      0.014  
+c3p18      straight    RT        0.271    146   0.60652   -Inf         42.604       5.989      0.022  
+c3p18      straight    AUC       -1.229   146   0.11052   -Inf         0.004        -0.011     0.101  
+c3p19      straight    RT        -0.104   154   0.4588    -Inf         29.382       -1.963     0.008  
+c3p19      straight    AUC       -1.328   154   0.09314   -Inf         0.003        -0.011     0.106  
+c3p2       straight    RT        -0.966   141   0.16783   -Inf         16.666       -23.346    0.081  
+c3p2       straight    AUC       0.718    141   0.76299   -Inf         0.017        0.005      0.06   
+c3p20      straight    RT        0.449    154   0.67291   -Inf         47.658       10.168     0.036  
+c3p20      straight    AUC       -1.244   154   0.10768   -Inf         0.002        -0.006     0.1    
+c3p21      straight    RT        0.93     157   0.82311   -Inf         53.914       19.4       0.074  
+c3p21      straight    AUC       0.528    157   0.70082   -Inf         0.024        0.006      0.042  
+c3p22      straight    RT        0.044    157   0.51759   -Inf         34.365       0.894      0.004  
+c3p22      straight    AUC       -1.092   157   0.13835   -Inf         0.002        -0.005     0.087  
+c3p3       straight    RT        -0.796   154   0.21359   -Inf         17.85        -16.55     0.064  
+c3p3       straight    AUC       -0.12    154   0.45246   -Inf         0.013        -0.001     0.01   
+c3p4       straight    RT        -1.643   151   0.05122   -Inf         0.255        -35.111    0.133  
+c3p4       straight    AUC       -1.399   151   0.08189   -Inf         0.002        -0.011     0.113  
+c3p5       straight    RT        1.039    148   0.84967   -Inf         43.702       16.85      0.085  
+c3p5       straight    AUC       0.795    148   0.78611   -Inf         0.018        0.006      0.065  
+c3p6       straight    RT        -0.007   148   0.49712   -Inf         38.788       -0.17      0.001  
+c3p6       straight    AUC       0.827    148   0.79516   -Inf         0.013        0.004      0.068  
+c3p8       straight    RT        0.801    151   0.78784   -Inf         55.674       18.159     0.065  
+c3p8       straight    AUC       -0.011   151   0.49554   -Inf         0.011        0          0.001  
+c3p9       straight    RT        0.729    153   0.76634   -Inf         46.665       14.266     0.059  
+c3p9       straight    AUC       -0.028   153   0.48878   -Inf         0.017        0          0.002  
+c4p10      straight    RT        -1.809   152   0.03623   -Inf         -2.194       -25.789    0.145  
+c4p10      straight    AUC       0.294    152   0.61527   -Inf         0.009        0.001      0.024  
+c4p11      straight    RT        -0.112   156   0.45545   -Inf         33.352       -2.423     0.009  
+c4p11      straight    AUC       -2.586   156   0.00531   -Inf         -0.009       -0.024     0.203  
+c4p12      straight    RT        1.671    153   0.95165   -Inf         63.491       31.902     0.134  
+c4p12      straight    AUC       0.844    153   0.79993   -Inf         0.013        0.004      0.068  
+c4p14      straight    RT        -0.915   147   0.18071   -Inf         19.881       -24.604    0.075  
+c4p14      straight    AUC       -0.473   147   0.31859   -Inf         0.005        -0.002     0.039  
+c4p15      straight    RT        -0.341   157   0.36675   -Inf         21.726       -5.642     0.027  
+c4p15      straight    AUC       -0.182   157   0.4281    -Inf         0.011        -0.001     0.014  
+c4p16      straight    RT        -0.896   150   0.18579   -Inf         18.103       -21.379    0.073  
+c4p16      straight    AUC       -0.348   150   0.36402   -Inf         0.01         -0.003     0.028  
+c4p17      straight    RT        -0.296   146   0.3839    -Inf         27.868       -6.064     0.024  
+c4p17      straight    AUC       -0.841   146   0.20079   -Inf         0.007        -0.007     0.069  
+c4p18      straight    RT        -0.568   150   0.2856    -Inf         20.002       -10.438    0.046  
+c4p18      straight    AUC       0.359    150   0.63979   -Inf         0.017        0.003      0.029  
+c4p2       straight    RT        1.413    152   0.92019   -Inf         67.399       31.045     0.114  
+c4p2       straight    AUC       0.691    152   0.75461   -Inf         0.02         0.006      0.056  
+c4p20      straight    RT        0.678    148   0.75049   -Inf         51.983       15.101     0.056  
+c4p20      straight    AUC       -1.238   148   0.10881   -Inf         0.003        -0.008     0.101  
+c4p3       straight    RT        0.428    150   0.66536   -Inf         48.702       10.006     0.035  
+c4p3       straight    AUC       -1.553   150   0.06129   -Inf         0.001        -0.013     0.126  
+c4p5       straight    RT        0.372    151   0.64466   -Inf         27.297       5.006      0.03   
+c4p5       straight    AUC       -1.356   151   0.08855   -Inf         0.002        -0.01      0.11   
+c4p6       straight    RT        -0.718   151   0.23707   -Inf         23.264       -17.807    0.058  
+c4p6       straight    AUC       -0.182   151   0.42773   -Inf         0.009        -0.001     0.015  
+c4p7       straight    RT        0.367    136   0.64283   -Inf         42.443       7.696      0.031  
+c4p7       straight    AUC       0.292    136   0.61457   -Inf         0.02         0.003      0.025  
+c4p8       straight    RT        -0.026   132   0.48956   -Inf         35.559       -0.572     0.002  
+c4p8       straight    AUC       0.229    132   0.59041   -Inf         0.015        0.002      0.02   
+
+
+# Trajectory dissection
 
 Mouse trajectories are typically thought to result from a number of cognitive 
 processes that depend on different factors within a trial. In order to examine
